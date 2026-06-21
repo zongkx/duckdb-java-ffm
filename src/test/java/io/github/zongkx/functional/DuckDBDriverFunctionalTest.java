@@ -1,16 +1,28 @@
 package io.github.zongkx.functional;
 
 import io.github.zongkx.DuckDBDriver;
-import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
 
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.Driver;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.Properties;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Driver 功能验证测试
- *
+ * <p>
  * 覆盖 Driver 注册、URL 解析、连接建立与参数传递等核心功能，
  * 确保 Driver 在各种场景下能正确工作。
  */
@@ -18,7 +30,7 @@ import static org.junit.jupiter.api.Assertions.*;
 @DisplayName("Driver 功能验证测试")
 class DuckDBDriverFunctionalTest {
 
-    private static final String MEMORY_URL = "jdbc:duckdb:memory";
+    private static final String MEMORY_URL = "jdbc:duckdb:";
 
     @BeforeAll
     static void verifyDriver() throws SQLException {

@@ -13,7 +13,6 @@ import java.lang.invoke.MethodHandle;
 
 public class DuckDBNative {
 
-    // --- 跨平台 C 类型兼容性定义 ---
     public static final AddressLayout C_POINTER = ValueLayout.ADDRESS;
     public static final ValueLayout.OfInt C_INT = ValueLayout.JAVA_INT;
     public static final ValueLayout.OfByte C_INT8 = ValueLayout.JAVA_BYTE;
@@ -23,19 +22,10 @@ public class DuckDBNative {
     public static final ValueLayout.OfFloat C_FLOAT = ValueLayout.JAVA_FLOAT;
     public static final ValueLayout.OfDouble C_DOUBLE = ValueLayout.JAVA_DOUBLE;
 
-    // 动态适配 Linux (8字节) 和 Windows (4字节) 的 C long
-    public static final ValueLayout.OfLong C_LONG = (Linker.nativeLinker().canonicalLayouts().get("long") instanceof ValueLayout.OfLong dl)
-            ? dl : ValueLayout.JAVA_LONG;
 
-    // DuckDB 的 idx_t 永远是 8 字节 (uint64_t)
     public static final ValueLayout.OfLong C_IDX = ValueLayout.JAVA_LONG;
 
-    // 假设你的动态库查找器已经在外层定义好
     public static final SymbolLookup SYMBOL_LOOKUP = SymbolLookup.libraryLookup(java.nio.file.Path.of(System.mapLibraryName("duckdb")), Arena.global());
-
-    // ==========================================
-    // 1. 数据库与连接生命周期管理 (Database & Connection)
-    // ==========================================
 
     public static class duckdb_open {
         public static final FunctionDescriptor DESC = FunctionDescriptor.of(C_INT, C_POINTER, C_POINTER);
@@ -60,10 +50,6 @@ public class DuckDBNative {
         public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("duckdb_disconnect");
         public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
     }
-
-    // ==========================================
-    // 2. 传统查询与基本元数据 API (Basic Query & Metadata)
-    // ==========================================
 
     public static class duckdb_query {
         public static final FunctionDescriptor DESC = FunctionDescriptor.of(C_INT, C_POINTER, C_POINTER, C_POINTER);
@@ -113,10 +99,6 @@ public class DuckDBNative {
         public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
     }
 
-    // ==========================================
-    // 3. 现代高性能列式数据块读取 API (Data Chunk & Vector)
-    // ==========================================
-
     public static class duckdb_result_chunk_count {
         public static final FunctionDescriptor DESC = FunctionDescriptor.of(C_IDX, C_POINTER);
         public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("duckdb_result_chunk_count");
@@ -164,10 +146,6 @@ public class DuckDBNative {
         public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("duckdb_validity_row_is_valid");
         public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
     }
-
-    // ==========================================
-    // 4. 预编译 SQL 与参数绑定 API (Prepared Statements)
-    // ==========================================
 
     public static class duckdb_prepare {
         public static final FunctionDescriptor DESC = FunctionDescriptor.of(C_INT, C_POINTER, C_POINTER, C_POINTER);
@@ -235,10 +213,6 @@ public class DuckDBNative {
         public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
     }
 
-    // ==========================================
-    // 5. 传统平铺型单元值读取 API (仅用于轻量级 Fallback 或测试)
-    // ==========================================
-
     public static class duckdb_value_varchar {
         public static final FunctionDescriptor DESC = FunctionDescriptor.of(C_POINTER, C_POINTER, C_IDX, C_IDX);
         public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("duckdb_value_varchar");
@@ -251,7 +225,6 @@ public class DuckDBNative {
         public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
     }
 
-    // 你刚才提到的缓存管理 API（按需保留）
     public static class duckdb_get_or_create_from_cache {
         public static final FunctionDescriptor DESC = FunctionDescriptor.of(C_INT, C_POINTER, C_POINTER, C_POINTER, C_POINTER, C_POINTER);
         public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("duckdb_get_or_create_from_cache");
@@ -259,11 +232,7 @@ public class DuckDBNative {
     }
 
 
-    // ==========================================
-    // 内存释放工具 API (Memory Management)
-    // ==========================================
     public static class duckdb_free {
-        // C 原型: void duckdb_free(void *ptr);
         public static final FunctionDescriptor DESC = FunctionDescriptor.ofVoid(C_POINTER);
         public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("duckdb_free");
         public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);

@@ -1,18 +1,33 @@
 package io.github.zongkx.stress;
 
-import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
 
-import java.sql.*;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.*;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * 性能与稳定性测试 (Stress Testing)
- *
+ * <p>
  * 模拟工业级场景下的多线程并发、高频连接、大数据量和资源泄漏检测。
  */
 @Tag("stress")
@@ -21,8 +36,7 @@ import static org.junit.jupiter.api.Assertions.*;
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class DuckDBStressTest {
 
-    private static final String MEMORY_URL = "jdbc:duckdb:memory";
-
+    private static final String MEMORY_URL = "jdbc:duckdb:stress_test.db";
     // ============================================================
     // §1. 并发压力测试
     // ============================================================

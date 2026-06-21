@@ -34,13 +34,8 @@ import java.util.concurrent.locks.ReentrantLock;
 public final class DuckDBJdbcConnection implements java.sql.Connection {
 
     private final DuckDBConnection nativeConn;
-
-    // 锁保护：用于保护本层状态逻辑
     private final ReentrantLock connLock = new ReentrantLock();
-
-    // 追踪本连接派生出的活跃 Statement，以便级联释放
     private final LinkedHashSet<DuckDBJdbcStatement> activeStatements = new LinkedHashSet<>();
-
     private volatile boolean autoCommit = true;
     private volatile boolean transactionRunning = false;
     private volatile boolean isClosed = false;
@@ -88,21 +83,21 @@ public final class DuckDBJdbcConnection implements java.sql.Connection {
         return createStatement(resultSetType, resultSetConcurrency, ResultSet.CLOSE_CURSORS_AT_COMMIT);
     }
 
-    @Override
-    public PreparedStatement prepareStatement(String sql, int resultSetType, int resultSetConcurrency, int resultSetHoldability) throws SQLException {
+    public PreparedStatement prepareStatement(String sql, int resultSetType,
+                                              int resultSetConcurrency, int resultSetHoldability) throws SQLException {
         checkOpen();
         connLock.lock();
         try {
             checkOpen();
-            if (resultSetConcurrency == ResultSet.CONCUR_READ_ONLY && resultSetType == ResultSet.TYPE_FORWARD_ONLY) {
+            if (resultSetConcurrency == ResultSet.CONCUR_READ_ONLY
+                    && resultSetType == ResultSet.TYPE_FORWARD_ONLY) {
                 DuckDBPreparedStatement nativeStmt = new DuckDBPreparedStatement(nativeConn, sql);
                 DuckDBJdbcPreparedStatement pstmt = new DuckDBJdbcPreparedStatement(this, nativeStmt);
                 activeStatements.add(pstmt);
                 return pstmt;
             }
-            throw new SQLFeatureNotSupportedException("DuckDB PreparedStatement only supports TYPE_FORWARD_ONLY");
-        } catch (Exception e) {
-            throw new SQLException("Failed to prepare statement", e);
+            throw new SQLFeatureNotSupportedException(
+                    "DuckDB PreparedStatement only supports TYPE_FORWARD_ONLY");
         } finally {
             connLock.unlock();
         }

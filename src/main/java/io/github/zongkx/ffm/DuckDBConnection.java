@@ -64,7 +64,6 @@ public class DuckDBConnection implements AutoCloseable {
         } finally {
             connLock.unlock();
         }
-
     }
 
     public DuckDBResultSet query(String sql) {
