@@ -1,10 +1,14 @@
 package io.github.zongkx;
 
 import io.github.zongkx.ffm.DuckDBConnection;
-import io.github.zongkx.ffm.DuckDBResultSet;
 import io.github.zongkx.ffm.DuckDBNative; // 确保引入 FFM 绑定层
+import io.github.zongkx.ffm.DuckDBResultSet;
 
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.SQLFeatureNotSupportedException;
+import java.sql.SQLWarning;
 
 public class DuckDBJdbcStatement implements java.sql.Statement {
 
@@ -29,10 +33,12 @@ public class DuckDBJdbcStatement implements java.sql.Statement {
     // 1. 核心 SQL 执行业务逻辑
     // ==========================================
 
+
     @Override
     public ResultSet executeQuery(String sql) throws SQLException {
         checkOpen();
         connection.notifyStatementExecution(); // 核心修复：激活事务状态看门狗
+        connection.beginTransactionIfNeeded();
         closeCurrentResultSet();
 
         try {
@@ -49,6 +55,7 @@ public class DuckDBJdbcStatement implements java.sql.Statement {
     public int executeUpdate(String sql) throws SQLException {
         checkOpen();
         connection.notifyStatementExecution();
+        connection.beginTransactionIfNeeded();
         closeCurrentResultSet();
 
         try (DuckDBResultSet nativeResult = nativeConn.query(sql)) {
@@ -64,6 +71,7 @@ public class DuckDBJdbcStatement implements java.sql.Statement {
     public boolean execute(String sql) throws SQLException {
         checkOpen();
         connection.notifyStatementExecution();
+        connection.beginTransactionIfNeeded();
         closeCurrentResultSet();
 
         try {
@@ -124,10 +132,25 @@ public class DuckDBJdbcStatement implements java.sql.Statement {
     // 4. 其余必要 JDBC 实现
     // ==========================================
 
-    @Override public boolean isClosed() throws SQLException { return isClosed; }
-    @Override public Connection getConnection() throws SQLException { return connection; }
-    @Override public int getUpdateCount() throws SQLException { return -1; } // 简化版暂不支持多结果集
-    @Override public boolean getMoreResults() throws SQLException { return false; }
+    @Override
+    public boolean isClosed() throws SQLException {
+        return isClosed;
+    }
+
+    @Override
+    public Connection getConnection() throws SQLException {
+        return connection;
+    }
+
+    @Override
+    public int getUpdateCount() throws SQLException {
+        return -1;
+    } // 简化版暂不支持多结果集
+
+    @Override
+    public boolean getMoreResults() throws SQLException {
+        return false;
+    }
 
     @Override
     public <T> T unwrap(Class<T> iface) throws SQLException {
@@ -135,42 +158,167 @@ public class DuckDBJdbcStatement implements java.sql.Statement {
         throw new SQLException("Not a wrapper");
     }
 
-    @Override public boolean isWrapperFor(Class<?> iface) throws SQLException { return iface.isInstance(this); }
+    @Override
+    public boolean isWrapperFor(Class<?> iface) throws SQLException {
+        return iface.isInstance(this);
+    }
 
     // ==========================================
     // 5. 剩余方法全部返回默认值或抛出特征异常
     // ==========================================
-    @Override public int getMaxFieldSize() throws SQLException { return 0; }
-    @Override public void setMaxFieldSize(int max) throws SQLException {}
-    @Override public int getMaxRows() throws SQLException { return 0; }
-    @Override public void setMaxRows(int max) throws SQLException {}
-    @Override public void setEscapeProcessing(boolean enable) throws SQLException {}
-    @Override public int getQueryTimeout() throws SQLException { return 0; }
-    @Override public void setQueryTimeout(int seconds) throws SQLException {}
-    @Override public void cancel() throws SQLException { throw new SQLFeatureNotSupportedException(); }
-    @Override public SQLWarning getWarnings() throws SQLException { return null; }
-    @Override public void clearWarnings() throws SQLException {}
-    @Override public void setCursorName(String name) throws SQLException { throw new SQLFeatureNotSupportedException(); }
-    @Override public void setFetchDirection(int direction) throws SQLException {}
-    @Override public int getFetchDirection() throws SQLException { return ResultSet.FETCH_FORWARD; }
-    @Override public void setFetchSize(int rows) throws SQLException {}
-    @Override public int getFetchSize() throws SQLException { return 0; }
-    @Override public int getResultSetConcurrency() throws SQLException { return ResultSet.CONCUR_READ_ONLY; }
-    @Override public int getResultSetType() throws SQLException { return ResultSet.TYPE_FORWARD_ONLY; }
-    @Override public void addBatch(String sql) throws SQLException { throw new SQLFeatureNotSupportedException(); }
-    @Override public void clearBatch() throws SQLException { throw new SQLFeatureNotSupportedException(); }
-    @Override public int[] executeBatch() throws SQLException { throw new SQLFeatureNotSupportedException(); }
-    @Override public ResultSet getGeneratedKeys() throws SQLException { return null; }
-    @Override public int executeUpdate(String sql, int autoGeneratedKeys) throws SQLException { return executeUpdate(sql); }
-    @Override public int executeUpdate(String sql, int[] columnIndexes) throws SQLException { return executeUpdate(sql); }
-    @Override public int executeUpdate(String sql, String[] columnNames) throws SQLException { return executeUpdate(sql); }
-    @Override public boolean execute(String sql, int autoGeneratedKeys) throws SQLException { return execute(sql); }
-    @Override public boolean execute(String sql, int[] columnIndexes) throws SQLException { return execute(sql); }
-    @Override public boolean execute(String sql, String[] columnNames) throws SQLException { return execute(sql); }
-    @Override public int getResultSetHoldability() throws SQLException { return ResultSet.CLOSE_CURSORS_AT_COMMIT; }
-    @Override public boolean isPoolable() throws SQLException { return false; }
-    @Override public void setPoolable(boolean poolable) throws SQLException {}
-    @Override public void closeOnCompletion() throws SQLException {}
-    @Override public boolean isCloseOnCompletion() throws SQLException { return false; }
-    @Override public boolean getMoreResults(int current) throws SQLException { return false; }
+    @Override
+    public int getMaxFieldSize() throws SQLException {
+        return 0;
+    }
+
+    @Override
+    public void setMaxFieldSize(int max) throws SQLException {
+    }
+
+    @Override
+    public int getMaxRows() throws SQLException {
+        return 0;
+    }
+
+    @Override
+    public void setMaxRows(int max) throws SQLException {
+    }
+
+    @Override
+    public void setEscapeProcessing(boolean enable) throws SQLException {
+    }
+
+    @Override
+    public int getQueryTimeout() throws SQLException {
+        return 0;
+    }
+
+    @Override
+    public void setQueryTimeout(int seconds) throws SQLException {
+    }
+
+    @Override
+    public void cancel() throws SQLException {
+        throw new SQLFeatureNotSupportedException();
+    }
+
+    @Override
+    public SQLWarning getWarnings() throws SQLException {
+        return null;
+    }
+
+    @Override
+    public void clearWarnings() throws SQLException {
+    }
+
+    @Override
+    public void setCursorName(String name) throws SQLException {
+        throw new SQLFeatureNotSupportedException();
+    }
+
+    @Override
+    public void setFetchDirection(int direction) throws SQLException {
+    }
+
+    @Override
+    public int getFetchDirection() throws SQLException {
+        return ResultSet.FETCH_FORWARD;
+    }
+
+    @Override
+    public void setFetchSize(int rows) throws SQLException {
+    }
+
+    @Override
+    public int getFetchSize() throws SQLException {
+        return 0;
+    }
+
+    @Override
+    public int getResultSetConcurrency() throws SQLException {
+        return ResultSet.CONCUR_READ_ONLY;
+    }
+
+    @Override
+    public int getResultSetType() throws SQLException {
+        return ResultSet.TYPE_FORWARD_ONLY;
+    }
+
+    @Override
+    public void addBatch(String sql) throws SQLException {
+        throw new SQLFeatureNotSupportedException();
+    }
+
+    @Override
+    public void clearBatch() throws SQLException {
+        throw new SQLFeatureNotSupportedException();
+    }
+
+    @Override
+    public int[] executeBatch() throws SQLException {
+        throw new SQLFeatureNotSupportedException();
+    }
+
+    @Override
+    public ResultSet getGeneratedKeys() throws SQLException {
+        return null;
+    }
+
+    @Override
+    public int executeUpdate(String sql, int autoGeneratedKeys) throws SQLException {
+        return executeUpdate(sql);
+    }
+
+    @Override
+    public int executeUpdate(String sql, int[] columnIndexes) throws SQLException {
+        return executeUpdate(sql);
+    }
+
+    @Override
+    public int executeUpdate(String sql, String[] columnNames) throws SQLException {
+        return executeUpdate(sql);
+    }
+
+    @Override
+    public boolean execute(String sql, int autoGeneratedKeys) throws SQLException {
+        return execute(sql);
+    }
+
+    @Override
+    public boolean execute(String sql, int[] columnIndexes) throws SQLException {
+        return execute(sql);
+    }
+
+    @Override
+    public boolean execute(String sql, String[] columnNames) throws SQLException {
+        return execute(sql);
+    }
+
+    @Override
+    public int getResultSetHoldability() throws SQLException {
+        return ResultSet.CLOSE_CURSORS_AT_COMMIT;
+    }
+
+    @Override
+    public boolean isPoolable() throws SQLException {
+        return false;
+    }
+
+    @Override
+    public void setPoolable(boolean poolable) throws SQLException {
+    }
+
+    @Override
+    public void closeOnCompletion() throws SQLException {
+    }
+
+    @Override
+    public boolean isCloseOnCompletion() throws SQLException {
+        return false;
+    }
+
+    @Override
+    public boolean getMoreResults(int current) throws SQLException {
+        return false;
+    }
 }

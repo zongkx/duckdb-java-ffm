@@ -47,115 +47,63 @@ public class DuckDBConnection implements AutoCloseable {
     }
 
     public void trackStatement(AutoCloseable stmt) {
-
         connLock.lock();
-
         try {
-
             if (!isClosed) {
                 activeStatements.add(stmt);
             }
-
         } finally {
-
             connLock.unlock();
-
         }
-
     }
 
     public void untrackStatement(AutoCloseable stmt) {
-
         connLock.lock();
-
         try {
-
             activeStatements.remove(stmt);
-
         } finally {
-
             connLock.unlock();
-
         }
 
     }
 
     public DuckDBResultSet query(String sql) {
-
         return new DuckDBResultSet(this, sql);
-
     }
 
     @Override
     public void close() {
-
         List<AutoCloseable> targets;
-
         connLock.lock();
-
         try {
-
             if (isClosed) {
                 return;
             }
-
-            targets =
-                    new ArrayList<>(activeStatements);
-
+            targets = new ArrayList<>(activeStatements);
             Collections.reverse(targets);
-
             activeStatements.clear();
-
             isClosed = true;
-
         } finally {
-
             connLock.unlock();
-
         }
 
         for (AutoCloseable stmt : targets) {
-
             try {
-
                 stmt.close();
-
             } catch (Exception ignore) {
-
             }
-
         }
-
         try {
-
-            System.out.println("disconnect");
-
-            System.out.println("connPtr    = " + connPtr);
-
-            System.out.println("connHandle = " + connHandle);
-
-            if (connPtr != null
-                    && !connPtr.equals(MemorySegment.NULL)) {
-
-                // 关键！！！
-                // duckdb_disconnect(
-                //      duckdb_connection*
-                // )
+            if (connPtr != null && !connPtr.equals(MemorySegment.NULL)) {
                 DuckDBNative.duckdb_disconnect.HANDLE
                         .invokeExact(connPtr);
-
             }
 
         } catch (Throwable t) {
-
             t.printStackTrace();
-
         } finally {
-
             arena.close();
-
         }
-
     }
 
 }

@@ -109,5 +109,4 @@ class DuckDBDatabaseMetaDataTest {
         assertTrue(metaData.supportsTransactions());
     }
 
-    // 可根据需要补充更多测试，例如 isReadOnly, getDriverName 等
 }

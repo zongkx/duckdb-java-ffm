@@ -159,9 +159,10 @@ public final class DuckDBJdbcConnection implements java.sql.Connection {
         }
         connLock.lock();
         try {
-            // 核心修复：不派生任何 Statement 子组件，通过底层 nativeConn 裸运行直接提交，规避无限递归
-            executeDirectSql("COMMIT;");
-            transactionRunning = false;
+            if (transactionRunning) {
+                executeDirectSql("COMMIT;");
+                transactionRunning = false;
+            }
         } finally {
             connLock.unlock();
         }
@@ -175,9 +176,11 @@ public final class DuckDBJdbcConnection implements java.sql.Connection {
         }
         connLock.lock();
         try {
-            // 核心修复：不派生任何 Statement 子组件，通过底层 nativeConn 裸运行直接回滚，规避无限递归
-            executeDirectSql("ROLLBACK;");
-            transactionRunning = false;
+            if (transactionRunning) {
+                executeDirectSql("ROLLBACK;");
+                transactionRunning = false;
+            }
+            // 如果 transactionRunning 为 false，表示没有事务，无需操作
         } finally {
             connLock.unlock();
         }
@@ -187,17 +190,23 @@ public final class DuckDBJdbcConnection implements java.sql.Connection {
      * 连接内专属工具方法：绕过 JDBC 上层直接与第二层 FFM 交互执行基础事务控制 SQL
      */
     private void executeDirectSql(String sql) throws SQLException {
-        try (DuckDBResultSet rs = nativeConn.query(sql)) {
+        try (DuckDBResultSet _ = nativeConn.query(sql)) {
             // 仅仅执行，利用 try-with-resources 自动 close 销毁底层 C 结果集
         } catch (Throwable t) {
             throw new SQLException("Transaction command execution failed: " + sql, t);
         }
     }
 
-    void notifyStatementExecution() {
-        if (!autoCommit) {
+    // 在 DuckDBJdbcConnection 中
+    void beginTransactionIfNeeded() throws SQLException {
+        if (!autoCommit && !transactionRunning) {
+            executeDirectSql("BEGIN TRANSACTION;");
             transactionRunning = true;
         }
+    }
+
+    void notifyStatementExecution() {
+
     }
 
     /**

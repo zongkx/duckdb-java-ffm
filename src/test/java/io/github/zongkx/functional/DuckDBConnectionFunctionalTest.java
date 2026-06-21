@@ -1,16 +1,32 @@
 package io.github.zongkx.functional;
 
-import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
 
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.DatabaseMetaData;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.SQLFeatureNotSupportedException;
+import java.sql.Statement;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Connection 功能验证测试
- *
  * 覆盖 Connection 的全部核心功能：
  * - 事务控制 (auto-commit, commit, rollback)
  * - Statement 生命周期管理
@@ -27,7 +43,7 @@ class DuckDBConnectionFunctionalTest {
 
     @BeforeAll
     static void setup() throws SQLException {
-        conn = DriverManager.getConnection("jdbc:duckdb:memory");
+        conn = DriverManager.getConnection("jdbc:duckdb:");
         try (Statement stmt = conn.createStatement()) {
             stmt.execute("CREATE TABLE conn_test (id INTEGER, name VARCHAR, amount DOUBLE)");
             stmt.execute("INSERT INTO conn_test VALUES (1, 'Alice', 100.5), (2, 'Bob', 200.7)");
