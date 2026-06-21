@@ -1,6 +1,5 @@
 package io.github.zongkx.ffm;
 
-import org.duckdb.ffi.duckdb_h;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -376,7 +375,7 @@ public class DuckDBNative {
     }
 
     public static class duckdb_clear_bindings {
-        public static final FunctionDescriptor DESC = FunctionDescriptor.ofVoid(duckdb_h.C_POINTER);
+        public static final FunctionDescriptor DESC = FunctionDescriptor.ofVoid(C_POINTER);
         public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("duckdb_clear_bindings");
         public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
     }
