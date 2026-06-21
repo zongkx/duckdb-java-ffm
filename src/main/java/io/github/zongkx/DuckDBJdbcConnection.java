@@ -1,7 +1,6 @@
 package io.github.zongkx;
 
 import io.github.zongkx.ffm.DuckDBConnection;
-import io.github.zongkx.ffm.DuckDBDatabase;
 import io.github.zongkx.ffm.DuckDBResultSet; // 确保引入第二层的结果集用于底层的裸查询
 
 import java.lang.foreign.MemorySegment;
@@ -35,7 +34,6 @@ import java.util.concurrent.locks.ReentrantLock;
 public final class DuckDBJdbcConnection implements java.sql.Connection {
 
     private final DuckDBConnection nativeConn;
-    private final DuckDBDatabase nativeDb;
 
     // 锁保护：用于保护本层状态逻辑
     private final ReentrantLock connLock = new ReentrantLock();
@@ -47,9 +45,8 @@ public final class DuckDBJdbcConnection implements java.sql.Connection {
     private volatile boolean transactionRunning = false;
     private volatile boolean isClosed = false;
 
-    public DuckDBJdbcConnection(DuckDBConnection nativeConn, DuckDBDatabase nativeDb) {
+    public DuckDBJdbcConnection(DuckDBConnection nativeConn) {
         this.nativeConn = nativeConn;
-        this.nativeDb = nativeDb;
     }
 
     public MemorySegment getNativeHandle() throws SQLException {

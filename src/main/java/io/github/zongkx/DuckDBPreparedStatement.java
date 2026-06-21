@@ -50,22 +50,47 @@ public class DuckDBPreparedStatement implements AutoCloseable {
     }
 
 
-    public void setLong(long paramIdx, long value) throws Throwable {
-        DuckDBNative.duckdb_bind_int64.HANDLE.invokeExact(getRawStmt(), paramIdx, value);
-    }
-
-    public void setString(long paramIdx, String value) throws Throwable {
+    public void setString(long paramIdx, String value) throws SQLException {
         if (value == null) {
-            DuckDBNative.duckdb_bind_null.HANDLE.invokeExact(getRawStmt(), paramIdx);
+            try {
+                int rc = (int) DuckDBNative.duckdb_bind_null.HANDLE.invokeExact(getRawStmt(), paramIdx);
+                check(rc);
+            } catch (Throwable e) {
+                throw new SQLException(e);
+            }
         } else {
-            // 在当前 Statement 的 arena 中分配临时字符串，close 时会自动批量销毁
-            MemorySegment cStr = arena.allocateFrom(value);
-            DuckDBNative.duckdb_bind_varchar.HANDLE.invokeExact(getRawStmt(), paramIdx, cStr);
+            try {
+                MemorySegment cStr = arena.allocateFrom(value);
+                int rc = (int) DuckDBNative.duckdb_bind_varchar.HANDLE.invokeExact(getRawStmt(), paramIdx, cStr);
+                check(rc);
+            } catch (Throwable e) {
+                throw new SQLException(e);
+            }
         }
     }
 
-    public void setNull(long paramIdx) throws Throwable {
-        DuckDBNative.duckdb_bind_null.HANDLE.invokeExact(getRawStmt(), paramIdx);
+    public void setLong(long paramIdx, long value) throws SQLException {
+        try {
+            int rc = (int) DuckDBNative.duckdb_bind_int64.HANDLE.invokeExact(getRawStmt(), paramIdx, value);
+            check(rc);
+        } catch (Throwable e) {
+            throw new SQLException(e);
+        }
+    }
+
+    private void check(int rc) throws SQLException {
+        if (rc != 0) {
+            throw new SQLException("DuckDB error, rc=" + rc);
+        }
+    }
+
+    public void setNull(long paramIdx) throws SQLException {
+        try {
+            int rc = (int) DuckDBNative.duckdb_bind_null.HANDLE.invokeExact(getRawStmt(), paramIdx);
+            check(rc);
+        } catch (Throwable e) {
+            throw new SQLException(e);
+        }
     }
 
     public void clearBindings() throws Throwable {

@@ -2,98 +2,47 @@ package io.github.zongkx.ffm;
 
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.concurrent.locks.ReentrantLock;
 
 public class DuckDBConnection implements AutoCloseable {
 
-    /**
-     * duckdb_connection*
-     *
-     * 对应：
-     *
-     * duckdb_connection conn;
-     * duckdb_connect(db, &conn);
-     *
-     * 这里保存的是 &conn
-     */
     private final MemorySegment connPtr;
 
-    /**
-     * duckdb_connection
-     *
-     * 真正的连接句柄。
-     */
     private final MemorySegment connHandle;
 
     private final Arena arena = Arena.ofShared();
 
     private final ReentrantLock connLock = new ReentrantLock();
 
-    private final LinkedHashSet<AutoCloseable> activeStatements =
-            new LinkedHashSet<>();
+    private final LinkedHashSet<AutoCloseable> activeStatements = new LinkedHashSet<>();
 
     private volatile boolean isClosed = false;
 
     public DuckDBConnection(DuckDBDatabase db) {
-
         try {
-
-            // duckdb_connection*
-            this.connPtr =
-                    arena.allocate(DuckDBNative.C_POINTER);
-
-            int rc =
-                    (int) DuckDBNative.duckdb_connect.HANDLE.invokeExact(
-                            db.getHandle(),
-                            connPtr
-                    );
-
+            this.connPtr = arena.allocate(DuckDBNative.C_POINTER);
+            int rc = (int) DuckDBNative.duckdb_connect.HANDLE.invokeExact(db.getHandle(), connPtr);
             if (rc != 0) {
-                throw new RuntimeException(
-                        "DuckDB 连接建立失败，rc=" + rc
-                );
+                throw new RuntimeException("DuckDB 连接建立失败，rc=" + rc);
             }
-
-            // duckdb_connection
-            this.connHandle =
-                    connPtr.get(
-                            DuckDBNative.C_POINTER,
-                            0
-                    );
-
-            System.out.println("connPtr    = " + connPtr);
-            System.out.println("connHandle = " + connHandle);
-
+            this.connHandle = connPtr.get(DuckDBNative.C_POINTER, 0);
         } catch (Throwable t) {
-
             try {
                 arena.close();
             } catch (Exception ignore) {
             }
-
             throw new RuntimeException(t);
         }
-
     }
 
-    /**
-     * 返回真正连接
-     *
-     * 用于：
-     *
-     * duckdb_query
-     * duckdb_prepare
-     * duckdb_execute
-     */
     public MemorySegment getHandle() {
-
         if (isClosed) {
-            throw new IllegalStateException(
-                    "Connection already closed"
-            );
+            throw new IllegalStateException("Connection already closed");
         }
-
         return connHandle;
     }
 

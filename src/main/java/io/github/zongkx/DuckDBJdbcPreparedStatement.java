@@ -191,7 +191,7 @@ public final class DuckDBJdbcPreparedStatement extends DuckDBJdbcStatement imple
     public void setLong(int parameterIndex, long x) throws SQLException {
         checkOpen();
         try {
-            nativeStmt.setLong((long) parameterIndex - 1, x);
+            nativeStmt.setLong(parameterIndex, x);   // 直接传 1-based
         } catch (Throwable t) {
             throw new SQLException(t);
         }
@@ -201,7 +201,7 @@ public final class DuckDBJdbcPreparedStatement extends DuckDBJdbcStatement imple
     public void setString(int parameterIndex, String x) throws SQLException {
         checkOpen();
         try {
-            nativeStmt.setString((long) parameterIndex - 1, x);
+            nativeStmt.setString(parameterIndex, x); // 直接传 1-based
         } catch (Throwable t) {
             throw new SQLException(t);
         }
@@ -211,7 +211,7 @@ public final class DuckDBJdbcPreparedStatement extends DuckDBJdbcStatement imple
     public void setNull(int parameterIndex, int sqlType) throws SQLException {
         checkOpen();
         try {
-            nativeStmt.setNull((long) parameterIndex - 1);
+            nativeStmt.setNull(parameterIndex);      // 直接传 1-based
         } catch (Throwable t) {
             throw new SQLException(t);
         }
@@ -221,8 +221,7 @@ public final class DuckDBJdbcPreparedStatement extends DuckDBJdbcStatement imple
     public void setBoolean(int parameterIndex, boolean x) throws SQLException {
         checkOpen();
         try {
-            // 映射到底层的数值或依赖基础实现
-            nativeStmt.setInt((long) parameterIndex - 1, x ? 1 : 0);
+            nativeStmt.setInt(parameterIndex, x ? 1 : 0); // 1-based，setInt 内部也会 check
         } catch (Throwable t) {
             throw new SQLException(t);
         }
@@ -230,7 +229,7 @@ public final class DuckDBJdbcPreparedStatement extends DuckDBJdbcStatement imple
 
     @Override
     public void setByte(int parameterIndex, byte x) throws SQLException {
-        setInt(parameterIndex, x);
+        setInt(parameterIndex, x);   // 直接委托，已经是 1-based
     }
 
     // ==========================================

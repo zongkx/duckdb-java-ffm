@@ -3,8 +3,15 @@ package io.github.zongkx;
 import io.github.zongkx.ffm.DuckDBConnection;
 import io.github.zongkx.ffm.DuckDBDatabase;
 
-import java.sql.*;
-import java.util.*;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.DriverPropertyInfo;
+import java.sql.SQLException;
+import java.sql.SQLFeatureNotSupportedException;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Properties;
 import java.util.concurrent.locks.ReentrantLock;
 
 public class DuckDBDriver implements java.sql.Driver {
@@ -57,7 +64,7 @@ public class DuckDBDriver implements java.sql.Driver {
             }
 
             DuckDBConnection nativeConn = new DuckDBConnection(dbInstance);
-            return new DuckDBJdbcConnection(nativeConn, dbInstance);
+            return new DuckDBJdbcConnection(nativeConn);
 
         } catch (Exception e) {
             throw new SQLException("建立 DuckDB 连接失败, URL: " + url, e);
@@ -93,7 +100,11 @@ public class DuckDBDriver implements java.sql.Driver {
         dbLock.lock();
         try {
             for (DuckDBDatabase db : pinnedDatabases.values()) {
-                try { db.close(); } catch (Exception e) { e.printStackTrace(); }
+                try {
+                    db.close();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
             }
             pinnedDatabases.clear();
         } finally {
@@ -104,15 +115,35 @@ public class DuckDBDriver implements java.sql.Driver {
     private static class ParsedProps {
         final String shortUrl;
         final LinkedHashMap<String, String> props;
+
         ParsedProps(String shortUrl, LinkedHashMap<String, String> props) {
             this.shortUrl = shortUrl;
             this.props = props;
         }
     }
 
-    @Override public DriverPropertyInfo[] getPropertyInfo(String url, Properties info) { return new DriverPropertyInfo[0]; }
-    @Override public int getMajorVersion() { return 1; }
-    @Override public int getMinorVersion() { return 0; }
-    @Override public boolean jdbcCompliant() { return false; }
-    @Override public java.util.logging.Logger getParentLogger() throws SQLFeatureNotSupportedException { throw new SQLFeatureNotSupportedException(); }
+    @Override
+    public DriverPropertyInfo[] getPropertyInfo(String url, Properties info) {
+        return new DriverPropertyInfo[0];
+    }
+
+    @Override
+    public int getMajorVersion() {
+        return 1;
+    }
+
+    @Override
+    public int getMinorVersion() {
+        return 0;
+    }
+
+    @Override
+    public boolean jdbcCompliant() {
+        return false;
+    }
+
+    @Override
+    public java.util.logging.Logger getParentLogger() throws SQLFeatureNotSupportedException {
+        throw new SQLFeatureNotSupportedException();
+    }
 }
