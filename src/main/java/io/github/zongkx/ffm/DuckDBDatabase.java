@@ -13,7 +13,7 @@ public class DuckDBDatabase implements AutoCloseable {
     private volatile boolean closed = false;
 
     public DuckDBDatabase() {
-        this(null);   // 或者调用另一个接收 String 的构造器，传入 null
+        this(null);
     }
 
     public DuckDBDatabase(String path) {

@@ -2,14 +2,24 @@ package io.github.zongkx.ffm;
 
 import org.duckdb.ffi.duckdb_h;
 
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
 import java.lang.foreign.AddressLayout;
-import java.lang.foreign.Arena;
 import java.lang.foreign.FunctionDescriptor;
 import java.lang.foreign.Linker;
 import java.lang.foreign.MemorySegment;
 import java.lang.foreign.SymbolLookup;
 import java.lang.foreign.ValueLayout;
 import java.lang.invoke.MethodHandle;
+import java.net.URI;
+import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+import java.security.CodeSource;
+import java.security.ProtectionDomain;
 
 public class DuckDBNative {
 
@@ -23,9 +33,136 @@ public class DuckDBNative {
     public static final ValueLayout.OfDouble C_DOUBLE = ValueLayout.JAVA_DOUBLE;
 
 
+    static {
+        try {
+            loadNativeLibrary();
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to load DuckDB native library", e);
+        }
+    }
+
+    private static final String ARCH_X86_64 = "amd64";
+    private static final String ARCH_AARCH64 = "arm64";
+    private static final String ARCH_UNIVERSAL = "universal";
+
+    private static final String OS_WINDOWS = "windows";
+    private static final String OS_MACOS = "osx";
+    private static final String OS_LINUX = "linux";
+
+
+    static {
+        try {
+            loadNativeLibrary();
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to load DuckDB native library", e);
+        }
+    }
+
+    private static void loadNativeLibrary() throws Exception {
+        String libName = nativeLibName();
+        URL libRes = DuckDBNative.class.getResource("/" + libName);
+        if (null != libRes) {
+            unpackAndLoad(libRes);
+            return;
+        }
+        try {
+            System.loadLibrary("duckdb_java");
+        } catch (UnsatisfiedLinkError e) {
+            try {
+                loadFromCurrentJarDir(libName);
+            } catch (Throwable t) {
+                e.printStackTrace();
+                throw new IllegalStateException(t);
+            }
+        }
+    }
+
+    static Path currentJarDir() throws Exception {
+        ProtectionDomain pd = DuckDBNative.class.getProtectionDomain();
+        CodeSource cs = pd.getCodeSource();
+        URL loc = cs.getLocation();
+        URI uri = loc.toURI();
+        Path jarPath = Paths.get(uri);
+        Path dirPath = jarPath.getParent();
+        return dirPath.toRealPath();
+    }
+
+    private static void loadFromCurrentJarDir(String libName) throws Exception {
+        Path dir = currentJarDir();
+        Path libPath = dir.resolve(libName);
+        if (Files.exists(libPath)) {
+            System.load(libPath.toAbsolutePath().toString());
+        } else {
+            throw new FileNotFoundException("DuckDB JNI library not found, path: '" + libPath.toAbsolutePath() + "'");
+        }
+    }
+
+    private static String cpuArch() {
+        String prop = System.getProperty("os.arch").toLowerCase().trim();
+        switch (prop) {
+            case "x86_64":
+            case "amd64":
+                return ARCH_X86_64;
+            case "aarch64":
+            case "arm64":
+                return ARCH_AARCH64;
+            default:
+                return prop.replaceAll("[^a-z0-9_\\-.]", "");
+        }
+    }
+
+    static String osName() {
+        String prop = System.getProperty("os.name").toLowerCase().trim();
+        if (prop.startsWith("windows")) {
+            return OS_WINDOWS;
+        } else if (prop.startsWith("mac")) {
+            return OS_MACOS;
+        } else if (prop.startsWith("linux")) {
+            return OS_LINUX;
+        } else {
+            return prop.replaceAll("[^a-z0-9_\\-.]", "");
+        }
+    }
+
+
+    private static String nativeLibExtension() {
+        String os = osName();
+        switch (os) {
+            case OS_WINDOWS:
+                return ".dll";
+            case OS_MACOS:
+                return ".dylib";
+            default:
+                return ".so";
+        }
+    }
+
+    static String nativeLibName() {
+        String os = osName();
+        String arch;
+        if (OS_MACOS.equals(os)) {
+            arch = ARCH_UNIVERSAL;
+        } else {
+            arch = cpuArch();
+        }
+        return os + "-" + arch + "/duckdb" + nativeLibExtension();
+    }
+
+    private static void unpackAndLoad(URL nativeLibRes) throws IOException {
+        // 使用正确的扩展名创建临时文件
+        String ext = nativeLibExtension();
+        Path tmpFile = Files.createTempFile("libduckdb_java", ext);
+        try (InputStream is = nativeLibRes.openStream()) {
+            Files.copy(is, tmpFile, StandardCopyOption.REPLACE_EXISTING);
+        }
+        tmpFile.toFile().deleteOnExit();
+        tmpFile.toFile().setExecutable(true);
+        System.load(tmpFile.toAbsolutePath().toString());
+    }
+
     public static final ValueLayout.OfLong C_IDX = ValueLayout.JAVA_LONG;
 
-    public static final SymbolLookup SYMBOL_LOOKUP = SymbolLookup.libraryLookup(java.nio.file.Path.of(System.mapLibraryName("duckdb")), Arena.global());
+    public static final SymbolLookup SYMBOL_LOOKUP = SymbolLookup.loaderLookup();
 
     public static class duckdb_open {
         public static final FunctionDescriptor DESC = FunctionDescriptor.of(C_INT, C_POINTER, C_POINTER);

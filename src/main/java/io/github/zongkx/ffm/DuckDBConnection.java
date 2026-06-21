@@ -27,7 +27,7 @@ public class DuckDBConnection implements AutoCloseable {
             this.connPtr = arena.allocate(DuckDBNative.C_POINTER);
             int rc = (int) DuckDBNative.duckdb_connect.HANDLE.invokeExact(db.getHandle(), connPtr);
             if (rc != 0) {
-                throw new RuntimeException("DuckDB 连接建立失败，rc=" + rc);
+                throw new RuntimeException("duckdb_connect error，rc=" + rc);
             }
             this.connHandle = connPtr.get(DuckDBNative.C_POINTER, 0);
         } catch (Throwable t) {

@@ -19,7 +19,7 @@ public class DuckDBPreparedStatement implements AutoCloseable {
             int rc = (int) DuckDBNative.duckdb_prepare.HANDLE.invokeExact(conn.getHandle(), cSql, stmtHandle);
             if (rc != 0) {
                 MemorySegment errorMsg = (MemorySegment) DuckDBNative.duckdb_prepare_error.HANDLE.invokeExact(stmtHandle);
-                throw new SQLException("SQL 预编译失败: " + errorMsg.reinterpret(Long.MAX_VALUE).getString(0));
+                throw new SQLException("duckdb_prepare error: " + errorMsg.reinterpret(Long.MAX_VALUE).getString(0));
             }
             conn.trackStatement(this);
         } catch (Throwable t) {
@@ -131,9 +131,9 @@ public class DuckDBPreparedStatement implements AutoCloseable {
             }
             DuckDBNative.duckdb_destroy_result.HANDLE.invokeExact(outResult);
             if (errorMsg != null) {
-                throw new SQLException("预编译 SQL 执行失败: " + errorMsg);
+                throw new SQLException("duckdb_prepare error: " + errorMsg);
             } else {
-                throw new SQLException("预编译 SQL 执行失败, rc=" + rc);
+                throw new SQLException("duckdb_prepare error, rc=" + rc);
             }
         }
         return outResult;
@@ -149,7 +149,7 @@ public class DuckDBPreparedStatement implements AutoCloseable {
             } finally {
                 arena.close();
                 isClosed = true;
-                connection.untrackStatement(this); // ✅ 从连接注销
+                connection.untrackStatement(this);
             }
         }
     }

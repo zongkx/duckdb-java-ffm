@@ -1,8 +1,7 @@
 package io.github.zongkx.ffm;
 
-import org.duckdb.ffi.duckdb_result;
-
-import java.lang.foreign.*;
+import java.lang.foreign.Arena;
+import java.lang.foreign.MemorySegment;
 
 public class DuckDBResultSet implements AutoCloseable {
 
@@ -10,19 +9,15 @@ public class DuckDBResultSet implements AutoCloseable {
     private final Arena arena;                  // 内部私有内存域（若不拥有结构体则为 null）
     private final boolean ownsStruct;           // 核心修复：判定是否拥有结构体的销毁权
 
-    // 状态控制
     private long totalRows = 0;
     private long totalCols = 0;
     private long currentRow = -1; // -1 代表游标还未开始移动
     private boolean isClosed = false;
 
-    // 必须添加这个方法
     public MemorySegment getHandle() {
         return this.resultStruct;
     }
-    /**
-     * 构造函数 1：直接执行文本查询并封装结果（自行分配内存，拥有销毁权）
-     */
+
     public DuckDBResultSet(DuckDBConnection conn, String sql) {
         this.arena = Arena.ofConfined(); // 结果集内部私有的、单线程闭环内存域
         this.ownsStruct = true;
@@ -50,10 +45,6 @@ public class DuckDBResultSet implements AutoCloseable {
         }
     }
 
-    /**
-     * 构造函数 2：专供 PreparedStatement 执行后直接传入已经生成好的 result 结构体
-     * （不拥有结构体物理内存销毁权，交由上层 PreparedStatement 统一管理释放）
-     */
     public DuckDBResultSet(MemorySegment preAllocatedResultStruct) {
         this.arena = null;
         this.resultStruct = preAllocatedResultStruct;
@@ -69,10 +60,6 @@ public class DuckDBResultSet implements AutoCloseable {
     public MemorySegment getStruct() {
         return resultStruct;
     }
-
-    // ==========================================
-    // 1. 纯粹的游标控制
-    // ==========================================
 
     public boolean next() {
         if (isClosed) return false;
@@ -91,13 +78,6 @@ public class DuckDBResultSet implements AutoCloseable {
         return totalRows;
     }
 
-    // ==========================================
-    // 2. 0-Based 数据提取 (面向底层的绝对坐标)
-    // ==========================================
-
-    /**
-     * 根据 0-Based 绝对列坐标获取当前行的数据字符串
-     */
     public String getString(long colIdx) {
         if (isClosed || currentRow < 0 || currentRow >= totalRows) {
             throw new IllegalStateException("游标不在有效的数据行上");
@@ -126,9 +106,7 @@ public class DuckDBResultSet implements AutoCloseable {
         }
     }
 
-    /**
-     * 根据 0-Based 绝对列坐标获取列名
-     */
+
     public String getColumnName(long colIdx) {
         if (colIdx < 0 || colIdx >= totalCols) throw new IndexOutOfBoundsException();
         try {
@@ -140,15 +118,11 @@ public class DuckDBResultSet implements AutoCloseable {
         }
     }
 
-    // ==========================================
-    // 3. 安全退出与内存彻底销毁
-    // ==========================================
 
     @Override
     public void close() {
         if (isClosed) return;
         try {
-            // 只有当本类是结果集内存的拥有者时，才执行 C 层的释放，避免 PreparedStatement 模式下的双重释放崩溃
             if (ownsStruct && resultStruct != null && !resultStruct.equals(MemorySegment.NULL)) {
                 DuckDBNative.duckdb_destroy_result.HANDLE.invokeExact(resultStruct);
             }
@@ -156,7 +130,7 @@ public class DuckDBResultSet implements AutoCloseable {
             t.printStackTrace();
         } finally {
             if (arena != null) {
-                arena.close(); // 回收本类分配的 128 字节栈槽内存
+                arena.close();
             }
             isClosed = true;
         }

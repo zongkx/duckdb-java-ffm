@@ -1,5 +1,6 @@
 package io.github.zongkx.stress;
 
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
@@ -9,6 +10,7 @@ import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
 
+import java.io.File;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -36,10 +38,17 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class DuckDBStressTest {
 
-    private static final String MEMORY_URL = "jdbc:duckdb:stress_test.db";
-    // ============================================================
-    // §1. 并发压力测试
-    // ============================================================
+    private static final String DB_PATH = "stress_test.db";
+    private static final String MEMORY_URL = "jdbc:duckdb:" + DB_PATH;
+
+
+    @AfterAll
+    static void cleanUp() {
+        File dbFile = new File(DB_PATH);
+        if (dbFile.exists()) {
+            dbFile.delete();
+        }
+    }
 
     @Test
     @Order(101)
