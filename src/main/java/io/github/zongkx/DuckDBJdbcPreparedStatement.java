@@ -1,6 +1,7 @@
 package io.github.zongkx;
 
 import io.github.zongkx.ffm.DuckDBNative;
+import io.github.zongkx.ffm.DuckDBPreparedStatement;
 import io.github.zongkx.ffm.DuckDBResultSet;
 
 import java.io.InputStream;

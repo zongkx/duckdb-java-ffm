@@ -1,20 +1,18 @@
-package io.github.zongkx;
-
-import io.github.zongkx.ffm.DuckDBConnection;
-import io.github.zongkx.ffm.DuckDBNative;
+package io.github.zongkx.ffm;
 
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
 import java.sql.SQLException;
 
 public class DuckDBPreparedStatement implements AutoCloseable {
-    private final MemorySegment stmtHandle; // 对应 C 的 duckdb_prepared_statement
-    private final Arena arena = Arena.ofConfined(); // 独立闭环的内存域
+    private final DuckDBConnection connection;
+    private final MemorySegment stmtHandle;
+    private final Arena arena = Arena.ofConfined();
     private boolean isClosed = false;
 
     public DuckDBPreparedStatement(DuckDBConnection conn, String sql) throws SQLException {
+        this.connection = conn;
         try {
-            // 分配一个指针大小的内存，用于接收 C 层创建的 statement 句柄
             this.stmtHandle = arena.allocate(DuckDBNative.C_POINTER);
             MemorySegment cSql = arena.allocateFrom(sql);
 
@@ -23,6 +21,7 @@ public class DuckDBPreparedStatement implements AutoCloseable {
                 MemorySegment errorMsg = (MemorySegment) DuckDBNative.duckdb_prepare_error.HANDLE.invokeExact(stmtHandle);
                 throw new SQLException("SQL 预编译失败: " + errorMsg.reinterpret(Long.MAX_VALUE).getString(0));
             }
+            conn.trackStatement(this);
         } catch (Throwable t) {
             arena.close();
             throw new SQLException(t);
@@ -44,6 +43,7 @@ public class DuckDBPreparedStatement implements AutoCloseable {
         try {
             int rc = (int) DuckDBNative.duckdb_bind_int32.HANDLE
                     .invokeExact(getRawStmt(), paramIdx, value);
+            check(rc);
         } catch (Throwable e) {
             throw new SQLException(e);
         }
@@ -147,8 +147,9 @@ public class DuckDBPreparedStatement implements AutoCloseable {
             } catch (Throwable t) {
                 t.printStackTrace();
             } finally {
-                arena.close(); // 彻底断后，释放所有绑定的临时字符串 C 内存
+                arena.close();
                 isClosed = true;
+                connection.untrackStatement(this); // ✅ 从连接注销
             }
         }
     }

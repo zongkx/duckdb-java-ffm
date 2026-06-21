@@ -1,6 +1,7 @@
 package io.github.zongkx;
 
 import io.github.zongkx.ffm.DuckDBConnection;
+import io.github.zongkx.ffm.DuckDBPreparedStatement;
 import io.github.zongkx.ffm.DuckDBResultSet; // 确保引入第二层的结果集用于底层的裸查询
 
 import java.lang.foreign.MemorySegment;
