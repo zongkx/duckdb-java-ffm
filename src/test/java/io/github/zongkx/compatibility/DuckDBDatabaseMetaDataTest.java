@@ -15,6 +15,7 @@ import org.junit.jupiter.api.TestMethodOrder;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.Properties;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -35,7 +36,7 @@ class DuckDBDatabaseMetaDataTest {
         DuckDBConnection nativeConn = db.connect();        // 相当于 duckdb_connect(db, &conn)
 
         // 2. 包装为 JDBC 连接
-        connection = new DuckDBJdbcConnection(nativeConn);
+        connection = new DuckDBJdbcConnection(nativeConn, ":memory:", new Properties());
         metaData = new DuckDBDatabaseMetaData(connection);
 
         // 3. 创建测试表（通过 JDBC 接口，方便后续验证）

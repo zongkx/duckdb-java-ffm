@@ -49,7 +49,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class DuckDBJdbcCompatibilityTest {
 
     private static final String VALID_URL = "jdbc:duckdb:";
-    private static final String MEMORY_URL = "jdbc:duckdb:memory";
+    private static final String MEMORY_URL = "jdbc:duckdb:memory:";
     private static Connection conn;
 
     @BeforeAll
@@ -85,7 +85,7 @@ class DuckDBJdbcCompatibilityTest {
 
         // 合法 URL
         assertTrue(driver.acceptsURL("jdbc:duckdb:"), "应接受标准协议头");
-        assertTrue(driver.acceptsURL("jdbc:duckdb:memory"), "应接受内存库 URL");
+        assertTrue(driver.acceptsURL("jdbc:duckdb:memory:"), "应接受内存库 URL");
         assertTrue(driver.acceptsURL("jdbc:duckdb:/tmp/test.db"), "应接受文件库 URL");
         assertTrue(driver.acceptsURL("jdbc:duckdb:test.db;readonly=true"), "应接受携带参数的 URL");
 

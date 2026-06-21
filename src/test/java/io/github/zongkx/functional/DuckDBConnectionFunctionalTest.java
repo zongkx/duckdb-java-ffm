@@ -151,7 +151,7 @@ class DuckDBConnectionFunctionalTest {
     @Order(7)
     @DisplayName("[CONN-07] close() 后 Statement 仍可执行（但连接已不可用）")
     void testCloseAndReopen() throws SQLException {
-        Connection c = DriverManager.getConnection("jdbc:duckdb:memory");
+        Connection c = DriverManager.getConnection("jdbc:duckdb:memory:");
         assertFalse(c.isClosed());
         c.close();
 
@@ -163,7 +163,7 @@ class DuckDBConnectionFunctionalTest {
     @Order(8)
     @DisplayName("[CONN-08] Connection.close() 级联关闭所有活跃 Statement")
     void testCascadeCloseStatements() throws SQLException {
-        Connection c = DriverManager.getConnection("jdbc:duckdb:memory");
+        Connection c = DriverManager.getConnection("jdbc:duckdb:memory:");
         Statement s1 = c.createStatement();
         Statement s2 = c.createStatement();
 

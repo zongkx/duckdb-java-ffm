@@ -40,9 +40,13 @@ public final class DuckDBJdbcConnection implements java.sql.Connection {
     private volatile boolean autoCommit = true;
     private volatile boolean transactionRunning = false;
     private volatile boolean isClosed = false;
+    private final String dbPath;                // 新增字段
+    private final Properties clientInfo;        // 保存传入的属性（可选）
 
-    public DuckDBJdbcConnection(DuckDBConnection nativeConn) {
+    public DuckDBJdbcConnection(DuckDBConnection nativeConn, String dbPath, Properties clientInfo) {
         this.nativeConn = nativeConn;
+        this.dbPath = dbPath;
+        this.clientInfo = clientInfo;
     }
 
     public MemorySegment getNativeHandle() throws SQLException {
@@ -216,19 +220,15 @@ public final class DuckDBJdbcConnection implements java.sql.Connection {
         connLock.lock();
         try {
             if (isClosed) return;
-
-            // 1. 锁内仅获取快照并立即清空容器，阻断重入
             targets = new ArrayList<>(activeStatements);
             Collections.reverse(targets);
             activeStatements.clear();
-
             isClosed = true;
         } finally {
-            // 2. 提前释放连接锁！防止下游子资源的释放反向回调 untrackStatement 产生死锁
             connLock.unlock();
         }
 
-        // 3. 在锁外串行、安全地释放下属全部活跃 Statement
+        // 关闭所有 Statement
         for (DuckDBJdbcStatement stmt : targets) {
             try {
                 stmt.close();
@@ -236,8 +236,11 @@ public final class DuckDBJdbcConnection implements java.sql.Connection {
             }
         }
 
-        // 4. 关闭第二层底层连接
+        // 关闭原生连接
         nativeConn.close();
+
+        // 通知驱动释放数据库引用
+        DuckDBDriver.releaseDatabase(dbPath);
     }
 
     @Override

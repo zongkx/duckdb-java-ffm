@@ -12,15 +12,17 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Properties;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 
 public class DuckDBDriver implements java.sql.Driver {
 
     static final String DUCKDB_URL_PREFIX = "jdbc:duckdb:";
 
-    private static final Map<String, DuckDBDatabase> pinnedDatabases = new HashMap<>();
+    // 数据库实例缓存（包括内存库）
+    private static final Map<String, DatabaseRef> pinnedDatabases = new HashMap<>();
     private static final ReentrantLock dbLock = new ReentrantLock();
-    private static boolean shutdownHookRegistered = false;
+    private static volatile boolean shutdownHookRegistered = false;
 
     static {
         try {
@@ -29,6 +31,32 @@ public class DuckDBDriver implements java.sql.Driver {
             throw new RuntimeException("无法注册 DuckDB 驱动", e);
         }
     }
+
+    static String dbNameFromUrl(String url) throws SQLException {
+        if (null == url) {
+            throw new SQLException("Invalid null URL specified");
+        }
+        if (!url.startsWith(DUCKDB_URL_PREFIX)) {
+            throw new SQLException("DuckDB JDBC URL needs to start with 'jdbc:duckdb:'");
+        }
+        final String shortUrl;
+        if (url.contains(";")) {
+            String[] parts = url.split(";");
+            shortUrl = parts[0].trim();
+        } else {
+            shortUrl = url;
+        }
+        String dbName = shortUrl.substring(DUCKDB_URL_PREFIX.length()).trim();
+        if (dbName.length() == 0) {
+            dbName = MEMORY_DB;
+        }
+        if (dbName.startsWith(MEMORY_DB.substring(1))) {
+            dbName = ":" + dbName;
+        }
+        return dbName;
+    }
+
+    static final String MEMORY_DB = ":memory:";
 
     @Override
     public Connection connect(String url, Properties info) throws SQLException {
@@ -40,34 +68,58 @@ public class DuckDBDriver implements java.sql.Driver {
         ParsedProps urlProps = parsePropsFromUrl(url);
         finalProps.putAll(urlProps.props);
 
-        String dbPath = urlProps.shortUrl.substring(DUCKDB_URL_PREFIX.length()).trim();
-        if (dbPath.isEmpty()) {
-            dbPath = ":memory:";
-        }
+        String dbPath = dbNameFromUrl(url);
 
         dbLock.lock();
         try {
-            DuckDBDatabase dbInstance;
-            if (":memory:".equals(dbPath)) {
-                dbInstance = new DuckDBDatabase(dbPath);
-            } else {
-                dbInstance = pinnedDatabases.get(dbPath);
-                if (dbInstance == null) {
-                    dbInstance = new DuckDBDatabase(dbPath);
-                    pinnedDatabases.put(dbPath, dbInstance);
-                }
+            DatabaseRef ref = pinnedDatabases.get(dbPath);
+            if (ref == null) {
+                DuckDBDatabase db = new DuckDBDatabase(dbPath);
+                ref = new DatabaseRef(db);
+                pinnedDatabases.put(dbPath, ref);
             }
-
+            ref.acquire();
             if (!shutdownHookRegistered) {
                 Runtime.getRuntime().addShutdownHook(new Thread(DuckDBDriver::shutdownAllDatabases));
                 shutdownHookRegistered = true;
             }
-
-            DuckDBConnection nativeConn = new DuckDBConnection(dbInstance);
-            return new DuckDBJdbcConnection(nativeConn);
+            DuckDBConnection nativeConn = new DuckDBConnection(ref.getDatabase());
+            return new DuckDBJdbcConnection(nativeConn, dbPath, finalProps);
 
         } catch (Exception e) {
             throw new SQLException("建立 DuckDB 连接失败, URL: " + url, e);
+        } finally {
+            dbLock.unlock();
+        }
+    }
+
+    // 由 DuckDBJdbcConnection.close() 调用，递减引用计数
+    static void releaseDatabase(String dbPath) {
+        dbLock.lock();
+        try {
+            DatabaseRef ref = pinnedDatabases.get(dbPath);
+            if (ref != null) {
+                if (ref.release() == 0) {
+                    ref.getDatabase().close();
+                    pinnedDatabases.remove(dbPath);
+                }
+            }
+        } finally {
+            dbLock.unlock();
+        }
+    }
+
+    private static void shutdownAllDatabases() {
+        dbLock.lock();
+        try {
+            for (DatabaseRef ref : pinnedDatabases.values()) {
+                try {
+                    ref.getDatabase().close();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+            pinnedDatabases.clear();
         } finally {
             dbLock.unlock();
         }
@@ -78,6 +130,7 @@ public class DuckDBDriver implements java.sql.Driver {
         return url != null && url.startsWith(DUCKDB_URL_PREFIX);
     }
 
+    // 解析分号分隔的 URL 参数（保留原有风格）
     private static ParsedProps parsePropsFromUrl(String url) throws SQLException {
         if (!url.contains(";")) {
             return new ParsedProps(url, new LinkedHashMap<>());
@@ -87,7 +140,7 @@ public class DuckDBDriver implements java.sql.Driver {
         for (int i = 1; i < parts.length; i++) {
             String entry = parts[i].trim();
             if (entry.isEmpty()) continue;
-            String[] kv = entry.split("=");
+            String[] kv = entry.split("=", 2);
             if (kv.length != 2) {
                 throw new SQLException("无效的 URL 配置项: " + entry);
             }
@@ -96,19 +149,25 @@ public class DuckDBDriver implements java.sql.Driver {
         return new ParsedProps(parts[0].trim(), props);
     }
 
-    private static void shutdownAllDatabases() {
-        dbLock.lock();
-        try {
-            for (DuckDBDatabase db : pinnedDatabases.values()) {
-                try {
-                    db.close();
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }
-            pinnedDatabases.clear();
-        } finally {
-            dbLock.unlock();
+    // 内部类：包装数据库实例 + 引用计数
+    private static class DatabaseRef {
+        private final DuckDBDatabase database;
+        private final AtomicInteger refCount = new AtomicInteger(0);
+
+        DatabaseRef(DuckDBDatabase database) {
+            this.database = database;
+        }
+
+        DuckDBDatabase getDatabase() {
+            return database;
+        }
+
+        void acquire() {
+            refCount.incrementAndGet();
+        }
+
+        int release() {
+            return refCount.decrementAndGet();
         }
     }
 
