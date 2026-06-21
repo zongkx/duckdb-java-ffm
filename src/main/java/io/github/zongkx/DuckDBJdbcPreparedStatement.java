@@ -7,7 +7,22 @@ import java.io.InputStream;
 import java.io.Reader;
 import java.lang.foreign.MemorySegment;
 import java.net.URL;
-import java.sql.*;
+import java.sql.Array;
+import java.sql.Blob;
+import java.sql.Clob;
+import java.sql.Date;
+import java.sql.NClob;
+import java.sql.ParameterMetaData;
+import java.sql.Ref;
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
+import java.sql.RowId;
+import java.sql.SQLException;
+import java.sql.SQLFeatureNotSupportedException;
+import java.sql.SQLXML;
+import java.sql.Time;
+import java.sql.Timestamp;
+import java.sql.Types;
 import java.util.Calendar;
 
 public final class DuckDBJdbcPreparedStatement extends DuckDBJdbcStatement implements java.sql.PreparedStatement {
@@ -169,11 +184,7 @@ public final class DuckDBJdbcPreparedStatement extends DuckDBJdbcStatement imple
     @Override
     public void setInt(int parameterIndex, int x) throws SQLException {
         checkOpen();
-        try {
-            nativeStmt.setInt((long) parameterIndex - 1, x);
-        } catch (Throwable t) {
-            throw new SQLException(t);
-        }
+        nativeStmt.setInt(parameterIndex, x);   // 直接传，不再减1
     }
 
     @Override
@@ -247,48 +258,207 @@ public final class DuckDBJdbcPreparedStatement extends DuckDBJdbcStatement imple
     // ==========================================
     // 4. 标准 JDBC 未实现兜底
     // ==========================================
-    @Override public void setShort(int pIdx, short x) throws SQLException { setInt(pIdx, x); }
-    @Override public void setDouble(int pIdx, double x) throws SQLException { checkOpen(); try { nativeStmt.setString((long) pIdx - 1, String.valueOf(x)); } catch(Throwable t) { throw new SQLException(t); } }
-    @Override public void setFloat(int pIdx, float x) throws SQLException { setDouble(pIdx, x); }
-    @Override public void setNull(int pIdx, int sType, String tName) throws SQLException { setNull(pIdx, sType); }
-    @Override public void setBigDecimal(int parameterIndex, java.math.BigDecimal x) throws SQLException { if (x == null) setNull(parameterIndex, Types.NUMERIC); else setString(parameterIndex, x.toString()); }
+    @Override
+    public void setShort(int pIdx, short x) throws SQLException {
+        setInt(pIdx, x);
+    }
 
-    @Override public void setURL(int parameterIndex, URL x) throws SQLException { throw new SQLFeatureNotSupportedException(); }
-    @Override public void setTimestamp(int pIdx, Timestamp x) throws SQLException { throw new SQLFeatureNotSupportedException("待以后借鉴官方的时间转换公式"); }
-    @Override public void setAsciiStream(int parameterIndex, InputStream x, int length) throws SQLException { throw new SQLFeatureNotSupportedException(); }
-    @Override public void setUnicodeStream(int parameterIndex, InputStream x, int length) throws SQLException { throw new SQLFeatureNotSupportedException(); }
-    @Override public void setBinaryStream(int parameterIndex, InputStream x, int length) throws SQLException { throw new SQLFeatureNotSupportedException(); }
-    @Override public void setTime(int pIdx, Time x) throws SQLException { throw new SQLFeatureNotSupportedException(); }
-    @Override public void setDate(int pIdx, Date x) throws SQLException { throw new SQLFeatureNotSupportedException(); }
-    @Override public void addBatch() throws SQLException { throw new SQLFeatureNotSupportedException(); }
-    @Override public void setCharacterStream(int parameterIndex, Reader reader, int length) throws SQLException { throw new SQLFeatureNotSupportedException(); }
-    @Override public void setRef(int parameterIndex, Ref x) throws SQLException { throw new SQLFeatureNotSupportedException(); }
-    @Override public void setBlob(int parameterIndex, Blob x) throws SQLException { throw new SQLFeatureNotSupportedException(); }
-    @Override public void setClob(int parameterIndex, Clob x) throws SQLException { throw new SQLFeatureNotSupportedException(); }
-    @Override public void setArray(int parameterIndex, Array x) throws SQLException { throw new SQLFeatureNotSupportedException(); }
-    @Override public void setBytes(int parameterIndex, byte[] x) throws SQLException { throw new SQLFeatureNotSupportedException(); }
-    @Override public void setDate(int parameterIndex, Date x, Calendar cal) throws SQLException { throw new SQLFeatureNotSupportedException(); }
-    @Override public void setTime(int parameterIndex, Time x, Calendar cal) throws SQLException { throw new SQLFeatureNotSupportedException(); }
-    @Override public void setTimestamp(int parameterIndex, Timestamp x, Calendar cal) throws SQLException { throw new SQLFeatureNotSupportedException(); }
-    @Override public ParameterMetaData getParameterMetaData() throws SQLException { return null; }
-    @Override public void setRowId(int parameterIndex, RowId x) throws SQLException {}
-    @Override public void setNString(int parameterIndex, String value) throws SQLException { setString(parameterIndex, value); }
-    @Override public void setNCharacterStream(int parameterIndex, Reader value, long length) throws SQLException {}
-    @Override public void setNClob(int parameterIndex, NClob value) throws SQLException {}
-    @Override public void setClob(int parameterIndex, Reader reader, long length) throws SQLException {}
-    @Override public void setBlob(int parameterIndex, InputStream inputStream, long length) throws SQLException {}
-    @Override public void setNClob(int parameterIndex, Reader reader, long length) throws SQLException {}
-    @Override public void setSQLXML(int parameterIndex, SQLXML xmlObject) throws SQLException {}
-    @Override public void setAsciiStream(int parameterIndex, InputStream x, long length) throws SQLException {}
-    @Override public void setBinaryStream(int parameterIndex, InputStream x, long length) throws SQLException {}
-    @Override public void setCharacterStream(int parameterIndex, Reader reader, long length) throws SQLException {}
-    @Override public void setAsciiStream(int parameterIndex, InputStream x) throws SQLException {}
-    @Override public void setBinaryStream(int parameterIndex, InputStream x) throws SQLException {}
-    @Override public void setCharacterStream(int parameterIndex, Reader reader) throws SQLException {}
-    @Override public void setNCharacterStream(int parameterIndex, Reader value) throws SQLException {}
-    @Override public void setClob(int parameterIndex, Reader reader) throws SQLException {}
-    @Override public void setBlob(int parameterIndex, InputStream inputStream) throws SQLException {}
-    @Override public void setNClob(int parameterIndex, Reader reader) throws SQLException {}
-    @Override public void setObject(int parameterIndex, Object x, int targetSqlType, int scaleOrLength) throws SQLException { setObject(parameterIndex, x); }
-    @Override public final ResultSetMetaData getMetaData() throws SQLException { return null; }
+    @Override
+    public void setDouble(int pIdx, double x) throws SQLException {
+        checkOpen();
+        try {
+            nativeStmt.setString((long) pIdx - 1, String.valueOf(x));
+        } catch (Throwable t) {
+            throw new SQLException(t);
+        }
+    }
+
+    @Override
+    public void setFloat(int pIdx, float x) throws SQLException {
+        setDouble(pIdx, x);
+    }
+
+    @Override
+    public void setNull(int pIdx, int sType, String tName) throws SQLException {
+        setNull(pIdx, sType);
+    }
+
+    @Override
+    public void setBigDecimal(int parameterIndex, java.math.BigDecimal x) throws SQLException {
+        if (x == null) setNull(parameterIndex, Types.NUMERIC);
+        else setString(parameterIndex, x.toString());
+    }
+
+    @Override
+    public void setURL(int parameterIndex, URL x) throws SQLException {
+        throw new SQLFeatureNotSupportedException();
+    }
+
+    @Override
+    public void setTimestamp(int pIdx, Timestamp x) throws SQLException {
+        throw new SQLFeatureNotSupportedException("待以后借鉴官方的时间转换公式");
+    }
+
+    @Override
+    public void setAsciiStream(int parameterIndex, InputStream x, int length) throws SQLException {
+        throw new SQLFeatureNotSupportedException();
+    }
+
+    @Override
+    public void setUnicodeStream(int parameterIndex, InputStream x, int length) throws SQLException {
+        throw new SQLFeatureNotSupportedException();
+    }
+
+    @Override
+    public void setBinaryStream(int parameterIndex, InputStream x, int length) throws SQLException {
+        throw new SQLFeatureNotSupportedException();
+    }
+
+    @Override
+    public void setTime(int pIdx, Time x) throws SQLException {
+        throw new SQLFeatureNotSupportedException();
+    }
+
+    @Override
+    public void setDate(int pIdx, Date x) throws SQLException {
+        throw new SQLFeatureNotSupportedException();
+    }
+
+    @Override
+    public void addBatch() throws SQLException {
+        throw new SQLFeatureNotSupportedException();
+    }
+
+    @Override
+    public void setCharacterStream(int parameterIndex, Reader reader, int length) throws SQLException {
+        throw new SQLFeatureNotSupportedException();
+    }
+
+    @Override
+    public void setRef(int parameterIndex, Ref x) throws SQLException {
+        throw new SQLFeatureNotSupportedException();
+    }
+
+    @Override
+    public void setBlob(int parameterIndex, Blob x) throws SQLException {
+        throw new SQLFeatureNotSupportedException();
+    }
+
+    @Override
+    public void setClob(int parameterIndex, Clob x) throws SQLException {
+        throw new SQLFeatureNotSupportedException();
+    }
+
+    @Override
+    public void setArray(int parameterIndex, Array x) throws SQLException {
+        throw new SQLFeatureNotSupportedException();
+    }
+
+    @Override
+    public void setBytes(int parameterIndex, byte[] x) throws SQLException {
+        throw new SQLFeatureNotSupportedException();
+    }
+
+    @Override
+    public void setDate(int parameterIndex, Date x, Calendar cal) throws SQLException {
+        throw new SQLFeatureNotSupportedException();
+    }
+
+    @Override
+    public void setTime(int parameterIndex, Time x, Calendar cal) throws SQLException {
+        throw new SQLFeatureNotSupportedException();
+    }
+
+    @Override
+    public void setTimestamp(int parameterIndex, Timestamp x, Calendar cal) throws SQLException {
+        throw new SQLFeatureNotSupportedException();
+    }
+
+    @Override
+    public ParameterMetaData getParameterMetaData() throws SQLException {
+        return null;
+    }
+
+    @Override
+    public void setRowId(int parameterIndex, RowId x) throws SQLException {
+    }
+
+    @Override
+    public void setNString(int parameterIndex, String value) throws SQLException {
+        setString(parameterIndex, value);
+    }
+
+    @Override
+    public void setNCharacterStream(int parameterIndex, Reader value, long length) throws SQLException {
+    }
+
+    @Override
+    public void setNClob(int parameterIndex, NClob value) throws SQLException {
+    }
+
+    @Override
+    public void setClob(int parameterIndex, Reader reader, long length) throws SQLException {
+    }
+
+    @Override
+    public void setBlob(int parameterIndex, InputStream inputStream, long length) throws SQLException {
+    }
+
+    @Override
+    public void setNClob(int parameterIndex, Reader reader, long length) throws SQLException {
+    }
+
+    @Override
+    public void setSQLXML(int parameterIndex, SQLXML xmlObject) throws SQLException {
+    }
+
+    @Override
+    public void setAsciiStream(int parameterIndex, InputStream x, long length) throws SQLException {
+    }
+
+    @Override
+    public void setBinaryStream(int parameterIndex, InputStream x, long length) throws SQLException {
+    }
+
+    @Override
+    public void setCharacterStream(int parameterIndex, Reader reader, long length) throws SQLException {
+    }
+
+    @Override
+    public void setAsciiStream(int parameterIndex, InputStream x) throws SQLException {
+    }
+
+    @Override
+    public void setBinaryStream(int parameterIndex, InputStream x) throws SQLException {
+    }
+
+    @Override
+    public void setCharacterStream(int parameterIndex, Reader reader) throws SQLException {
+    }
+
+    @Override
+    public void setNCharacterStream(int parameterIndex, Reader value) throws SQLException {
+    }
+
+    @Override
+    public void setClob(int parameterIndex, Reader reader) throws SQLException {
+    }
+
+    @Override
+    public void setBlob(int parameterIndex, InputStream inputStream) throws SQLException {
+    }
+
+    @Override
+    public void setNClob(int parameterIndex, Reader reader) throws SQLException {
+    }
+
+    @Override
+    public void setObject(int parameterIndex, Object x, int targetSqlType, int scaleOrLength) throws SQLException {
+        setObject(parameterIndex, x);
+    }
+
+    @Override
+    public final ResultSetMetaData getMetaData() throws SQLException {
+        return null;
+    }
 }

@@ -1,9 +1,14 @@
 package io.github.zongkx.ffm;
 
 import org.duckdb.ffi.duckdb_h;
-import org.duckdb.ffi.duckdb_result;
 
-import java.lang.foreign.*;
+import java.lang.foreign.AddressLayout;
+import java.lang.foreign.Arena;
+import java.lang.foreign.FunctionDescriptor;
+import java.lang.foreign.Linker;
+import java.lang.foreign.MemorySegment;
+import java.lang.foreign.SymbolLookup;
+import java.lang.foreign.ValueLayout;
 import java.lang.invoke.MethodHandle;
 
 public class DuckDBNative {
@@ -17,13 +22,13 @@ public class DuckDBNative {
     public static final ValueLayout.OfLong C_INT64 = ValueLayout.JAVA_LONG;
     public static final ValueLayout.OfFloat C_FLOAT = ValueLayout.JAVA_FLOAT;
     public static final ValueLayout.OfDouble C_DOUBLE = ValueLayout.JAVA_DOUBLE;
-    
+
     // 动态适配 Linux (8字节) 和 Windows (4字节) 的 C long
-    public static final ValueLayout.OfLong C_LONG = (Linker.nativeLinker().canonicalLayouts().get("long") instanceof ValueLayout.OfLong dl) 
+    public static final ValueLayout.OfLong C_LONG = (Linker.nativeLinker().canonicalLayouts().get("long") instanceof ValueLayout.OfLong dl)
             ? dl : ValueLayout.JAVA_LONG;
-            
+
     // DuckDB 的 idx_t 永远是 8 字节 (uint64_t)
-    public static final ValueLayout.OfLong C_IDX = ValueLayout.JAVA_LONG; 
+    public static final ValueLayout.OfLong C_IDX = ValueLayout.JAVA_LONG;
 
     // 假设你的动态库查找器已经在外层定义好
     public static final SymbolLookup SYMBOL_LOOKUP = SymbolLookup.libraryLookup(java.nio.file.Path.of(System.mapLibraryName("duckdb")), Arena.global());
@@ -245,7 +250,7 @@ public class DuckDBNative {
         public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("duckdb_value_is_null");
         public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
     }
-    
+
     // 你刚才提到的缓存管理 API（按需保留）
     public static class duckdb_get_or_create_from_cache {
         public static final FunctionDescriptor DESC = FunctionDescriptor.of(C_INT, C_POINTER, C_POINTER, C_POINTER, C_POINTER, C_POINTER);
@@ -265,10 +270,8 @@ public class DuckDBNative {
     }
 
     public static class duckdb_clear_bindings {
-        public static final FunctionDescriptor DESC  = FunctionDescriptor.of(duckdb_h.C_INT, duckdb_h.C_POINTER);;
+        public static final FunctionDescriptor DESC = FunctionDescriptor.ofVoid(duckdb_h.C_POINTER);
         public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("duckdb_clear_bindings");
         public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
-
-
     }
 }

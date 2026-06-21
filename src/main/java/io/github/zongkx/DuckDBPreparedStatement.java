@@ -3,7 +3,8 @@ package io.github.zongkx;
 import io.github.zongkx.ffm.DuckDBConnection;
 import io.github.zongkx.ffm.DuckDBNative;
 
-import java.lang.foreign.*;
+import java.lang.foreign.Arena;
+import java.lang.foreign.MemorySegment;
 import java.sql.SQLException;
 
 public class DuckDBPreparedStatement implements AutoCloseable {
@@ -16,7 +17,7 @@ public class DuckDBPreparedStatement implements AutoCloseable {
             // 分配一个指针大小的内存，用于接收 C 层创建的 statement 句柄
             this.stmtHandle = arena.allocate(DuckDBNative.C_POINTER);
             MemorySegment cSql = arena.allocateFrom(sql);
-            
+
             int rc = (int) DuckDBNative.duckdb_prepare.HANDLE.invokeExact(conn.getHandle(), cSql, stmtHandle);
             if (rc != 0) {
                 MemorySegment errorMsg = (MemorySegment) DuckDBNative.duckdb_prepare_error.HANDLE.invokeExact(stmtHandle);
@@ -32,13 +33,22 @@ public class DuckDBPreparedStatement implements AutoCloseable {
         return stmtHandle.get(DuckDBNative.C_POINTER, 0);
     }
 
-    // ==========================================
-    // 核心参数绑定实现（0-Based 绝对坐标）
-    // ==========================================
-
-    public void setInt(long paramIdx, int value) throws Throwable {
-        DuckDBNative.duckdb_bind_int32.HANDLE.invokeExact(getRawStmt(), paramIdx, value);
+    private void checkIndex(long paramIdx) throws SQLException {
+        if (paramIdx < 1) {
+            throw new SQLException("Parameter index must be >= 1, got " + paramIdx);
+        }
     }
+
+    public void setInt(long paramIdx, int value) throws SQLException {
+        checkIndex(paramIdx);
+        try {
+            int rc = (int) DuckDBNative.duckdb_bind_int32.HANDLE
+                    .invokeExact(getRawStmt(), paramIdx, value);
+        } catch (Throwable e) {
+            throw new SQLException(e);
+        }
+    }
+
 
     public void setLong(long paramIdx, long value) throws Throwable {
         DuckDBNative.duckdb_bind_int64.HANDLE.invokeExact(getRawStmt(), paramIdx, value);
@@ -67,7 +77,7 @@ public class DuckDBPreparedStatement implements AutoCloseable {
     // 执行并返回裸结果
     public MemorySegment executeRaw() throws Throwable {
         // 分配 128 字节用于承载 duckdb_result 结构体实体
-        MemorySegment outResult = arena.allocate(128); 
+        MemorySegment outResult = arena.allocate(128);
         int rc = (int) DuckDBNative.duckdb_execute_prepared.HANDLE.invokeExact(getRawStmt(), outResult);
         if (rc != 0) {
             throw new SQLException("预编译 SQL 执行失败");
