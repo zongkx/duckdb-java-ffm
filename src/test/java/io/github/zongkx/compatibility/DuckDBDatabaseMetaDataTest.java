@@ -21,6 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+@SuppressWarnings("all")
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class DuckDBDatabaseMetaDataTest {
 

@@ -177,9 +177,6 @@ public final class DuckDBJdbcPreparedStatement extends DuckDBJdbcStatement imple
         setObject(parameterIndex, x); // 极简驱动策略下，直接忽略 targetSqlType 类型提示，交由上层路由
     }
 
-    // ==========================================
-    // 2. 参数路由绑定 (JDBC 1-Based -> C 0-Based)
-    // ==========================================
 
     @Override
     public void setInt(int parameterIndex, int x) throws SQLException {
@@ -211,7 +208,7 @@ public final class DuckDBJdbcPreparedStatement extends DuckDBJdbcStatement imple
     public void setNull(int parameterIndex, int sqlType) throws SQLException {
         checkOpen();
         try {
-            nativeStmt.setNull(parameterIndex);      // 直接传 1-based
+            nativeStmt.setNull(parameterIndex);
         } catch (Throwable t) {
             throw new SQLException(t);
         }
@@ -221,7 +218,7 @@ public final class DuckDBJdbcPreparedStatement extends DuckDBJdbcStatement imple
     public void setBoolean(int parameterIndex, boolean x) throws SQLException {
         checkOpen();
         try {
-            nativeStmt.setInt(parameterIndex, x ? 1 : 0); // 1-based，setInt 内部也会 check
+            nativeStmt.setBoolean(parameterIndex, x);
         } catch (Throwable t) {
             throw new SQLException(t);
         }
@@ -254,9 +251,6 @@ public final class DuckDBJdbcPreparedStatement extends DuckDBJdbcStatement imple
         return isClosed;
     }
 
-    // ==========================================
-    // 4. 标准 JDBC 未实现兜底
-    // ==========================================
     @Override
     public void setShort(int pIdx, short x) throws SQLException {
         setInt(pIdx, x);
@@ -266,7 +260,7 @@ public final class DuckDBJdbcPreparedStatement extends DuckDBJdbcStatement imple
     public void setDouble(int pIdx, double x) throws SQLException {
         checkOpen();
         try {
-            nativeStmt.setString((long) pIdx - 1, String.valueOf(x));
+            nativeStmt.setDouble((long) pIdx, x);
         } catch (Throwable t) {
             throw new SQLException(t);
         }

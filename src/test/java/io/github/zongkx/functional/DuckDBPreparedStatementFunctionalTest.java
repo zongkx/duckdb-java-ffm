@@ -1,14 +1,31 @@
 package io.github.zongkx.functional;
 
-import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.sql.Types;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * PreparedStatement 全功能验证测试
- *
+ * <p>
  * 覆盖参数绑定、多类型、参数复用、清理等关键场景。
  */
 @Tag("functional")
@@ -20,7 +37,7 @@ class DuckDBPreparedStatementFunctionalTest {
 
     @BeforeAll
     static void setup() throws SQLException {
-        conn = DriverManager.getConnection("jdbc:duckdb:memory");
+        conn = DriverManager.getConnection("jdbc:duckdb:");
         try (Statement stmt = conn.createStatement()) {
             stmt.execute("CREATE TABLE pstmt_test ("
                     + "id INTEGER, "

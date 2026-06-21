@@ -69,6 +69,15 @@ public class DuckDBPreparedStatement implements AutoCloseable {
         }
     }
 
+    public void setDouble(long paramIdx, double value) throws SQLException {
+        try {
+            int rc = (int) DuckDBNative.duckdb_bind_double.HANDLE.invokeExact(getRawStmt(), paramIdx, value);
+            check(rc);
+        } catch (Throwable e) {
+            throw new SQLException(e);
+        }
+    }
+
     public void setLong(long paramIdx, long value) throws SQLException {
         try {
             int rc = (int) DuckDBNative.duckdb_bind_int64.HANDLE.invokeExact(getRawStmt(), paramIdx, value);
@@ -77,6 +86,17 @@ public class DuckDBPreparedStatement implements AutoCloseable {
             throw new SQLException(e);
         }
     }
+
+    public void setBoolean(long paramIdx, boolean value) throws SQLException {
+        try {
+            byte b = (byte) (value ? 1 : 0);  // DuckDB 的 bool 映射为 1 字节
+            int rc = (int) DuckDBNative.duckdb_bind_boolean.HANDLE.invokeExact(getRawStmt(), paramIdx, b);
+            check(rc);
+        } catch (Throwable e) {
+            throw new SQLException(e);
+        }
+    }
+
 
     private void check(int rc) throws SQLException {
         if (rc != 0) {
@@ -94,18 +114,27 @@ public class DuckDBPreparedStatement implements AutoCloseable {
     }
 
     public void clearBindings() throws Throwable {
-        // 对应 C API: void duckdb_clear_bindings(duckdb_prepared_statement prepared_statement)
-        // 允许在上层执行完一次后，清空参数重新绑定
         DuckDBNative.duckdb_clear_bindings.HANDLE.invokeExact(getRawStmt());
     }
 
-    // 执行并返回裸结果
+
     public MemorySegment executeRaw() throws Throwable {
-        // 分配 128 字节用于承载 duckdb_result 结构体实体
         MemorySegment outResult = arena.allocate(128);
         int rc = (int) DuckDBNative.duckdb_execute_prepared.HANDLE.invokeExact(getRawStmt(), outResult);
         if (rc != 0) {
-            throw new SQLException("预编译 SQL 执行失败");
+            String errorMsg = null;
+            MemorySegment errorPtr = (MemorySegment) DuckDBNative.duckdb_result_error.HANDLE.invokeExact(outResult);
+            if (errorPtr != null && errorPtr.address() != 0) {
+                // 重新解释为可读长度（错误消息一般很短）
+                MemorySegment readable = errorPtr.reinterpret(256);
+                errorMsg = readable.getString(0);
+            }
+            DuckDBNative.duckdb_destroy_result.HANDLE.invokeExact(outResult);
+            if (errorMsg != null) {
+                throw new SQLException("预编译 SQL 执行失败: " + errorMsg);
+            } else {
+                throw new SQLException("预编译 SQL 执行失败, rc=" + rc);
+            }
         }
         return outResult;
     }
