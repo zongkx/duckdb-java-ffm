@@ -1,6 +1,7 @@
 package io.github.zongkx.ffm;
 
 import org.duckdb.ffi.duckdb_h;
+import org.duckdb.ffi.duckdb_result;
 
 import java.lang.foreign.*;
 import java.lang.invoke.MethodHandle;

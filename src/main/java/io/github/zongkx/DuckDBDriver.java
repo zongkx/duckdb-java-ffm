@@ -9,7 +9,7 @@ import java.util.concurrent.locks.ReentrantLock;
 
 public class DuckDBDriver implements java.sql.Driver {
 
-    static final String DUCKDB_URL_PREFIX = "jdbc:duckdb:jmimic:";
+    static final String DUCKDB_URL_PREFIX = "jdbc:duckdb:";
 
     private static final Map<String, DuckDBDatabase> pinnedDatabases = new HashMap<>();
     private static final ReentrantLock dbLock = new ReentrantLock();
@@ -31,9 +31,7 @@ public class DuckDBDriver implements java.sql.Driver {
 
         Properties finalProps = info == null ? new Properties() : (Properties) info.clone();
         ParsedProps urlProps = parsePropsFromUrl(url);
-        for (Map.Entry<String, String> entry : urlProps.props.entrySet()) {
-            finalProps.put(entry.getKey(), entry.getValue());
-        }
+        finalProps.putAll(urlProps.props);
 
         String dbPath = urlProps.shortUrl.substring(DUCKDB_URL_PREFIX.length()).trim();
         if (dbPath.isEmpty()) {

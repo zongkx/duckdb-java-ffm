@@ -1,5 +1,7 @@
 package io.github.zongkx.ffm;
 
+import org.duckdb.ffi.duckdb_result;
+
 import java.lang.foreign.*;
 
 public class DuckDBResultSet implements AutoCloseable {
@@ -25,7 +27,7 @@ public class DuckDBResultSet implements AutoCloseable {
         this.arena = Arena.ofConfined(); // 结果集内部私有的、单线程闭环内存域
         this.ownsStruct = true;
         try {
-            // 在私有 arena 中分配 128 字节存放 duckdb_result 结构体
+            // 使用 duckdb-ffm 库提供的正确 struct 大小
             this.resultStruct = arena.allocate(128);
             MemorySegment cSql = arena.allocateFrom(sql);
 
