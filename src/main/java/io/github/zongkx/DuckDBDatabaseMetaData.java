@@ -124,9 +124,8 @@ public class DuckDBDatabaseMetaData implements DatabaseMetaData {
 
     @Override
     public String getURL() throws SQLException {
-        // Adapt to your DuckDBJdbcConnection's URL field/method
         try {
-            return connection.getMetaData().getURL();
+            return connection.dbPath;
         } catch (Exception e) {
             return "";
         }

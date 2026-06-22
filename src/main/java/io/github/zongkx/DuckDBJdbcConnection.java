@@ -40,7 +40,7 @@ public final class DuckDBJdbcConnection implements java.sql.Connection {
     private volatile boolean autoCommit = true;
     private volatile boolean transactionRunning = false;
     private volatile boolean isClosed = false;
-    private final String dbPath;                // 新增字段
+    public final String dbPath;                // 新增字段
     private final Properties clientInfo;        // 保存传入的属性（可选）
 
     public DuckDBJdbcConnection(DuckDBConnection nativeConn, String dbPath, Properties clientInfo) {

@@ -524,15 +524,6 @@ public class DuckdbJdbcResultSet implements java.sql.ResultSet {
         throw new SQLFeatureNotSupportedException();
     }
 
-    @Override
-    public void updateString(int cIdx, String x) throws SQLException {
-        throw new SQLFeatureNotSupportedException();
-    }
-
-    @Override
-    public void updateInt(int cIdx, int x) throws SQLException {
-        throw new SQLFeatureNotSupportedException();
-    }
 
     @Override
     public void refreshRow() throws SQLException {
@@ -665,150 +656,6 @@ public class DuckdbJdbcResultSet implements java.sql.ResultSet {
         return false;
     }
 
-    // 所有不必须的未实现方法保持默认或空，不阻碍基本操作
-    @Override
-    public void updateNull(int columnIndex) throws SQLException {
-    }
-
-    @Override
-    public void updateBoolean(int columnIndex, boolean x) throws SQLException {
-    }
-
-    @Override
-    public void updateByte(int columnIndex, byte x) throws SQLException {
-    }
-
-    @Override
-    public void updateShort(int columnIndex, short x) throws SQLException {
-    }
-
-    @Override
-    public void updateLong(int columnIndex, long x) throws SQLException {
-    }
-
-    @Override
-    public void updateFloat(int columnIndex, float x) throws SQLException {
-    }
-
-    @Override
-    public void updateDouble(int columnIndex, double x) throws SQLException {
-    }
-
-    @Override
-    public void updateBigDecimal(int columnIndex, BigDecimal x) throws SQLException {
-    }
-
-    @Override
-    public void updateBytes(int columnIndex, byte[] x) throws SQLException {
-    }
-
-    @Override
-    public void updateDate(int columnIndex, Date x) throws SQLException {
-    }
-
-    @Override
-    public void updateTime(int columnIndex, Time x) throws SQLException {
-    }
-
-    @Override
-    public void updateTimestamp(int columnIndex, Timestamp x) throws SQLException {
-    }
-
-    @Override
-    public void updateAsciiStream(int columnIndex, InputStream x, int length) throws SQLException {
-    }
-
-    @Override
-    public void updateBinaryStream(int columnIndex, InputStream x, int length) throws SQLException {
-    }
-
-    @Override
-    public void updateCharacterStream(int columnIndex, Reader x, int length) throws SQLException {
-    }
-
-    @Override
-    public void updateObject(int columnIndex, Object x, int scaleOrLength) throws SQLException {
-    }
-
-    @Override
-    public void updateObject(int columnIndex, Object x) throws SQLException {
-    }
-
-    @Override
-    public void updateNull(String columnLabel) throws SQLException {
-    }
-
-    @Override
-    public void updateBoolean(String columnLabel, boolean x) throws SQLException {
-    }
-
-    @Override
-    public void updateByte(String columnLabel, byte x) throws SQLException {
-    }
-
-    @Override
-    public void updateShort(String columnLabel, short x) throws SQLException {
-    }
-
-    @Override
-    public void updateInt(String columnLabel, int x) throws SQLException {
-    }
-
-    @Override
-    public void updateLong(String columnLabel, long x) throws SQLException {
-    }
-
-    @Override
-    public void updateFloat(String columnLabel, float x) throws SQLException {
-    }
-
-    @Override
-    public void updateDouble(String columnLabel, double x) throws SQLException {
-    }
-
-    @Override
-    public void updateBigDecimal(String columnLabel, BigDecimal x) throws SQLException {
-    }
-
-    @Override
-    public void updateString(String columnLabel, String x) throws SQLException {
-    }
-
-    @Override
-    public void updateBytes(String columnLabel, byte[] x) throws SQLException {
-    }
-
-    @Override
-    public void updateDate(String columnLabel, Date x) throws SQLException {
-    }
-
-    @Override
-    public void updateTime(String columnLabel, Time x) throws SQLException {
-    }
-
-    @Override
-    public void updateTimestamp(String columnLabel, Timestamp x) throws SQLException {
-    }
-
-    @Override
-    public void updateAsciiStream(String columnLabel, InputStream x, int length) throws SQLException {
-    }
-
-    @Override
-    public void updateBinaryStream(String columnLabel, InputStream x, int length) throws SQLException {
-    }
-
-    @Override
-    public void updateCharacterStream(String columnLabel, Reader reader, int length) throws SQLException {
-    }
-
-    @Override
-    public void updateObject(String columnLabel, Object x, int scaleOrLength) throws SQLException {
-    }
-
-    @Override
-    public void updateObject(String columnLabel, Object x) throws SQLException {
-    }
 
     @Override
     public void updateRef(int columnIndex, Ref x) throws SQLException {
@@ -989,113 +836,295 @@ public class DuckdbJdbcResultSet implements java.sql.ResultSet {
 
     @Override
     public void updateNCharacterStream(int columnIndex, Reader x, long length) throws SQLException {
+
     }
 
     @Override
     public void updateNCharacterStream(String columnLabel, Reader reader, long length) throws SQLException {
+
     }
 
     @Override
     public void updateAsciiStream(int columnIndex, InputStream x, long length) throws SQLException {
+
     }
 
     @Override
     public void updateBinaryStream(int columnIndex, InputStream x, long length) throws SQLException {
+
     }
 
     @Override
     public void updateCharacterStream(int columnIndex, Reader x, long length) throws SQLException {
+
     }
 
     @Override
     public void updateAsciiStream(String columnLabel, InputStream x, long length) throws SQLException {
+
     }
 
     @Override
     public void updateBinaryStream(String columnLabel, InputStream x, long length) throws SQLException {
+
     }
 
     @Override
     public void updateCharacterStream(String columnLabel, Reader reader, long length) throws SQLException {
+
     }
 
     @Override
     public void updateBlob(int columnIndex, InputStream inputStream, long length) throws SQLException {
+
     }
 
     @Override
     public void updateBlob(String columnLabel, InputStream inputStream, long length) throws SQLException {
+
     }
 
     @Override
     public void updateClob(int columnIndex, Reader reader, long length) throws SQLException {
+
     }
 
     @Override
     public void updateClob(String columnLabel, Reader reader, long length) throws SQLException {
+
     }
 
     @Override
     public void updateNClob(int columnIndex, Reader reader, long length) throws SQLException {
+
     }
 
     @Override
     public void updateNClob(String columnLabel, Reader reader, long length) throws SQLException {
+
     }
 
     @Override
     public void updateNCharacterStream(int columnIndex, Reader x) throws SQLException {
+        throw new SQLFeatureNotSupportedException("updateNCharacterStream");
     }
 
     @Override
     public void updateNCharacterStream(String columnLabel, Reader reader) throws SQLException {
+        throw new SQLFeatureNotSupportedException("updateNCharacterStream");
     }
 
     @Override
     public void updateAsciiStream(int columnIndex, InputStream x) throws SQLException {
+        throw new SQLFeatureNotSupportedException("updateAsciiStream");
     }
 
     @Override
     public void updateBinaryStream(int columnIndex, InputStream x) throws SQLException {
+        throw new SQLFeatureNotSupportedException("updateBinaryStream");
     }
 
     @Override
     public void updateCharacterStream(int columnIndex, Reader x) throws SQLException {
+        throw new SQLFeatureNotSupportedException("updateCharacterStream");
     }
 
     @Override
     public void updateAsciiStream(String columnLabel, InputStream x) throws SQLException {
+        throw new SQLFeatureNotSupportedException("updateAsciiStream");
     }
 
     @Override
     public void updateBinaryStream(String columnLabel, InputStream x) throws SQLException {
+        throw new SQLFeatureNotSupportedException("updateBinaryStream");
     }
 
     @Override
     public void updateCharacterStream(String columnLabel, Reader reader) throws SQLException {
+
     }
 
     @Override
     public void updateBlob(int columnIndex, InputStream inputStream) throws SQLException {
+
     }
 
     @Override
     public void updateBlob(String columnLabel, InputStream inputStream) throws SQLException {
+
     }
 
     @Override
     public void updateClob(int columnIndex, Reader reader) throws SQLException {
+
     }
 
     @Override
     public void updateClob(String columnLabel, Reader reader) throws SQLException {
+
     }
 
     @Override
     public void updateNClob(int columnIndex, Reader reader) throws SQLException {
+
     }
 
     @Override
     public void updateNClob(String columnLabel, Reader reader) throws SQLException {
+
     }
+
+    public void updateNull(int columnIndex) throws SQLException {
+        throw new SQLFeatureNotSupportedException("updateNull");
+    }
+
+    public void updateBoolean(int columnIndex, boolean x) throws SQLException {
+        throw new SQLFeatureNotSupportedException("updateBoolean");
+    }
+
+    public void updateByte(int columnIndex, byte x) throws SQLException {
+        throw new SQLFeatureNotSupportedException("updateByte");
+    }
+
+    public void updateShort(int columnIndex, short x) throws SQLException {
+        throw new SQLFeatureNotSupportedException("updateShort");
+    }
+
+    public void updateInt(int columnIndex, int x) throws SQLException {
+        throw new SQLFeatureNotSupportedException("updateInt");
+    }
+
+    public void updateLong(int columnIndex, long x) throws SQLException {
+        throw new SQLFeatureNotSupportedException("updateLong");
+    }
+
+    public void updateFloat(int columnIndex, float x) throws SQLException {
+        throw new SQLFeatureNotSupportedException("updateFloat");
+    }
+
+    public void updateDouble(int columnIndex, double x) throws SQLException {
+        throw new SQLFeatureNotSupportedException("updateDouble");
+    }
+
+    public void updateBigDecimal(int columnIndex, BigDecimal x) throws SQLException {
+        throw new SQLFeatureNotSupportedException("updateBigDecimal");
+    }
+
+    public void updateString(int columnIndex, String x) throws SQLException {
+        throw new SQLFeatureNotSupportedException("updateString");
+    }
+
+    public void updateBytes(int columnIndex, byte[] x) throws SQLException {
+        throw new SQLFeatureNotSupportedException("updateBytes");
+    }
+
+    public void updateDate(int columnIndex, Date x) throws SQLException {
+        throw new SQLFeatureNotSupportedException("updateDate");
+    }
+
+    public void updateTime(int columnIndex, Time x) throws SQLException {
+        throw new SQLFeatureNotSupportedException("updateTime");
+    }
+
+    public void updateTimestamp(int columnIndex, Timestamp x) throws SQLException {
+        throw new SQLFeatureNotSupportedException("updateTimestamp");
+    }
+
+    public void updateAsciiStream(int columnIndex, InputStream x, int length) throws SQLException {
+        throw new SQLFeatureNotSupportedException("updateAsciiStream");
+    }
+
+    public void updateBinaryStream(int columnIndex, InputStream x, int length) throws SQLException {
+        throw new SQLFeatureNotSupportedException("updateBinaryStream");
+    }
+
+    public void updateCharacterStream(int columnIndex, Reader x, int length) throws SQLException {
+        throw new SQLFeatureNotSupportedException("updateCharacterStream");
+    }
+
+    public void updateObject(int columnIndex, Object x, int scaleOrLength) throws SQLException {
+        throw new SQLFeatureNotSupportedException("updateObject");
+    }
+
+    public void updateObject(int columnIndex, Object x) throws SQLException {
+        throw new SQLFeatureNotSupportedException("updateObject");
+    }
+
+    public void updateNull(String columnLabel) throws SQLException {
+        throw new SQLFeatureNotSupportedException("updateNull");
+    }
+
+    public void updateBoolean(String columnLabel, boolean x) throws SQLException {
+        throw new SQLFeatureNotSupportedException("updateBoolean");
+    }
+
+    public void updateByte(String columnLabel, byte x) throws SQLException {
+        throw new SQLFeatureNotSupportedException("updateByte");
+    }
+
+    public void updateShort(String columnLabel, short x) throws SQLException {
+        throw new SQLFeatureNotSupportedException("updateShort");
+    }
+
+    public void updateInt(String columnLabel, int x) throws SQLException {
+        throw new SQLFeatureNotSupportedException("updateInt");
+    }
+
+    public void updateLong(String columnLabel, long x) throws SQLException {
+        throw new SQLFeatureNotSupportedException("updateLong");
+    }
+
+    public void updateFloat(String columnLabel, float x) throws SQLException {
+        throw new SQLFeatureNotSupportedException("updateFloat");
+    }
+
+    public void updateDouble(String columnLabel, double x) throws SQLException {
+        throw new SQLFeatureNotSupportedException("updateDouble");
+    }
+
+    public void updateBigDecimal(String columnLabel, BigDecimal x) throws SQLException {
+        throw new SQLFeatureNotSupportedException("updateBigDecimal");
+    }
+
+    public void updateString(String columnLabel, String x) throws SQLException {
+        throw new SQLFeatureNotSupportedException("updateString");
+    }
+
+    public void updateBytes(String columnLabel, byte[] x) throws SQLException {
+        throw new SQLFeatureNotSupportedException("updateBytes");
+    }
+
+    public void updateDate(String columnLabel, Date x) throws SQLException {
+        throw new SQLFeatureNotSupportedException("updateDate");
+    }
+
+    public void updateTime(String columnLabel, Time x) throws SQLException {
+        throw new SQLFeatureNotSupportedException("updateTime");
+    }
+
+    public void updateTimestamp(String columnLabel, Timestamp x) throws SQLException {
+        throw new SQLFeatureNotSupportedException("updateTimestamp");
+    }
+
+    public void updateAsciiStream(String columnLabel, InputStream x, int length) throws SQLException {
+        throw new SQLFeatureNotSupportedException("updateAsciiStream");
+    }
+
+    public void updateBinaryStream(String columnLabel, InputStream x, int length) throws SQLException {
+        throw new SQLFeatureNotSupportedException("updateBinaryStream");
+    }
+
+    public void updateCharacterStream(String columnLabel, Reader reader, int length) throws SQLException {
+        throw new SQLFeatureNotSupportedException("updateCharacterStream");
+    }
+
+    public void updateObject(String columnLabel, Object x, int scaleOrLength) throws SQLException {
+        throw new SQLFeatureNotSupportedException("updateObject");
+    }
+
+    public void updateObject(String columnLabel, Object x) throws SQLException {
+        throw new SQLFeatureNotSupportedException("updateObject");
+    }
+
+
 }
