@@ -267,7 +267,8 @@ public final class DuckDBJdbcConnection implements java.sql.Connection {
     // ==========================================
     @Override
     public DatabaseMetaData getMetaData() throws SQLException {
-        return null;
+        checkOpen(); // 保持一致性
+        return new DuckDBDatabaseMetaData(this);
     }
 
     @Override

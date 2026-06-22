@@ -24,7 +24,6 @@ public class DuckDBDatabaseMetaData implements DatabaseMetaData {
         this.connection = connection;
     }
 
-
     private static String nullPatternToWildcard(String pattern) {
         return pattern == null ? "%" : pattern;
     }
