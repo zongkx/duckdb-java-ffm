@@ -118,6 +118,57 @@ public class DuckDBResultSet implements AutoCloseable {
         }
     }
 
+    /**
+     * 返回 DuckDB 列的逻辑类型字符串，例如 "INTEGER", "VARCHAR" 等。
+     * 这个方法用于构建 ResultSetMetaData，避免 DBeaver 显示类型为 null。
+     */
+    public String getColumnTypeName(long colIdx) {
+        if (colIdx < 0 || colIdx >= totalCols) {
+            throw new IndexOutOfBoundsException("列索引超出界限: " + colIdx);
+        }
+        try {
+            int typeEnum = (int) DuckDBNative.duckdb_column_type.HANDLE.invokeExact(resultStruct, colIdx);
+            return duckdbTypeToString(typeEnum);
+        } catch (Throwable t) {
+            // 如果获取失败，回退为 VARCHAR（保证不抛异常，但类型可能不精确）
+            return "VARCHAR";
+        }
+    }
+
+    // 将 duckdb_type 枚举值转换为类型名字符串
+    private static String duckdbTypeToString(int typeId) {
+        return switch (typeId) {
+            case 0 -> "INVALID";
+            case 1 -> "BOOLEAN";
+            case 2 -> "TINYINT";
+            case 3 -> "SMALLINT";
+            case 4 -> "INTEGER";
+            case 5 -> "BIGINT";
+            case 6 -> "UTINYINT";
+            case 7 -> "USMALLINT";
+            case 8 -> "UINTEGER";
+            case 9 -> "UBIGINT";
+            case 10 -> "FLOAT";
+            case 11 -> "DOUBLE";
+            case 12 -> "TIMESTAMP";
+            case 13 -> "DATE";
+            case 14 -> "TIME";
+            case 15 -> "INTERVAL";
+            case 16 -> "HUGEINT";
+            case 17 -> "VARCHAR";
+            case 18 -> "BLOB";
+            case 19 -> "DECIMAL";
+            case 20 -> "TIMESTAMP_S";
+            case 21 -> "TIMESTAMP_MS";
+            case 22 -> "TIMESTAMP_NS";
+            case 23 -> "ENUM";
+            case 24 -> "LIST";
+            case 25 -> "STRUCT";
+            case 26 -> "UUID";
+            case 27 -> "JSON";
+            default -> "VARCHAR";
+        };
+    }
 
     @Override
     public void close() {
